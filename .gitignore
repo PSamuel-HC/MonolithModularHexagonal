@@ -1,0 +1,56 @@
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.v12.suo
+*.v14.suo
+*.v15.suo
+
+## Visual Studio Code
+.vscode/
+
+## NuGet Packages
+*.nupkg
+**/packages/*
+!**/packages/build/
+# Restoring packages is handled by VS, so no need to track the folder
+node_modules/
+
+## Testing
+TestResults/
+*.trx
+*.vshost.exe
+*.vshost.exe.config
+*.vshost.exe.manifest
+
+## Publish output
+*.publish.htm
+*.deploy
+publish/
+
+## Operating System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Web/Local Secrets (Uncomment if needed)
+# appsettings.Development.json
+# .env
