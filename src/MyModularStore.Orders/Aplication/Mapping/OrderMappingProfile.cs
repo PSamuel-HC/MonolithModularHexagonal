@@ -1,10 +1,6 @@
 ﻿using AutoMapper;
 using MyModularStore.Orders.Aplication.DTOs;
 using MyModularStore.Orders.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MyModularStore.Orders.Aplication.Mapping
 {

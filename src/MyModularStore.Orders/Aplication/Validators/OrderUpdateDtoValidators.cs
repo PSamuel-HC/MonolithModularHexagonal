@@ -2,7 +2,7 @@
 
 namespace MyModularStore.Orders.Aplication.Validators
 {
-    public class OrderCreateDtoValidators : OrderBaseDtoValidators<OrderCreateDto>
+    public class OrderUpdateDtoValidators : OrderBaseDtoValidators<OrderUpdateDto>
     {
     }
 }
