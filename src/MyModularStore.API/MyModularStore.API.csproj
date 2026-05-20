@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MyModularStore.Shared\MyModularStore.Shared.csproj" />
     <ProjectReference Include="..\MyModularStore.Products\MyModularStore.Products.csproj" />
+    <ProjectReference Include="..\MyModularStore.Employees\MyModularStore.Employees.csproj" />
     <ProjectReference Include="..\MyModularStore.Customers\MyModularStore.Customers.csproj" />
   </ItemGroup>
 
