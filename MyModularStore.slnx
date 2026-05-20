@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/MyModularStore.API/MyModularStore.API.csproj" />
+    <Project Path="src/MyModularStore.Customers/MyModularStore.Customers.csproj" />
     <Project Path="src/MyModularStore.Products/MyModularStore.Products.csproj" />
     <Project Path="src/MyModularStore.Employees/MyModularStore.Employees.csproj" />
     <Project Path="src/MyModularStore.Shared/MyModularStore.Shared.csproj" />
