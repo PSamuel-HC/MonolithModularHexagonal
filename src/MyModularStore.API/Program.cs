@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using MyModularStore.Orders;
 using MyModularStore.Products;
 using MyModularStore.Employees;
 using MyModularStore.Customers;
@@ -17,6 +18,7 @@ builder.Services.AddControllers()
 
 // Module DI registrations
 builder.Services.AddProductsModule(builder.Configuration);
+builder.Services.AddOrdersModule(builder.Configuration);
 builder.Services.AddEmployeesModule(builder.Configuration);
 builder.Services.AddCustomersModule(builder.Configuration);
 
