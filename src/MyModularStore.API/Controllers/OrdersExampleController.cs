@@ -6,7 +6,7 @@ namespace MyModularStore.API.Controllers
 {
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class OrderController(IOrderModule orderModule) : ControllerBase
+    public class OrdersController(IOrderModule orderModule) : ControllerBase
     {
         [HttpGet]
         public async Task<ActionResult<IEnumerable<OrderReadDto>>> GetAll() => Ok(await orderModule.GetAllAsync());

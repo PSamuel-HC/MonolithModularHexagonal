@@ -5,6 +5,7 @@ using MyModularStore.Customers.Application.Ports;
 using MyModularStore.Customers.Application.Validators;
 using MyModularStore.Customers.Domain;
 using MyModularStore.Shared.Contracts;
+using MyModularStore.Shared.Exceptions;
 
 namespace MyModularStore.Customers.Application
 {
@@ -80,6 +81,13 @@ namespace MyModularStore.Customers.Application
         }
 
         public async Task<bool> ExistsAsync(int id)
-            => await repository.GetOneAsync(id) is not null;
+        {
+            Customer? customer = await repository.GetOneAsync(id);
+            if(customer is null)
+            {
+                throw new NotFoundException($"Customer with Id {id} Not found");
+            }
+            return true;
+        }
     }
 }

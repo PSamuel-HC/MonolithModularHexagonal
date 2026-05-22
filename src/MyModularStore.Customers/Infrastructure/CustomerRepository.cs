@@ -16,7 +16,8 @@ namespace MyModularStore.Customers.Infrastructure
 
         public async Task<Customer?> GetOneAsync(int id)
         {
-            return await context.Customers.FindAsync(id);
+            var customer = await context.Customers.FindAsync(id);
+            return customer;
         }
 
         public async Task CreateAsync(Customer customer)
