@@ -5,9 +5,6 @@ using MyModularStore.Customers.Application.Ports;
 using MyModularStore.Customers.Application.Validators;
 using MyModularStore.Customers.Domain;
 using MyModularStore.Shared.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MyModularStore.Customers.Application
 {

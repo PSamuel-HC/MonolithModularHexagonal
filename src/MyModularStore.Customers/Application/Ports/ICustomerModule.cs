@@ -1,7 +1,5 @@
 ﻿using MyModularStore.Customers.Application.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using MyModularStore.Shared.Contracts;
 
 namespace MyModularStore.Customers.Application.Ports
 {
@@ -12,5 +10,7 @@ namespace MyModularStore.Customers.Application.Ports
         public Task<CustomerDto> GetOneCustomerAsync(int id);
         Task<bool> UpdateCustomerAsync(int id, CustomerUpdateDto customerUpdateDto);
         Task<bool> DeleteCustomerAsync(int id);
+        Task<CustomerInfo?> GetInfoAsync(int id);
+        Task<bool> ExistsAsync(int id);
     }
 }

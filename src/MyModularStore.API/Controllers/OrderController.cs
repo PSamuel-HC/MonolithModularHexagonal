@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MyModularStore.Orders.Aplication.DTOs;
-using MyModularStore.Orders.Aplication.Ports;
+using MyModularStore.Orders.Application.DTOs;
+using MyModularStore.Orders.Application.Ports;
 
 namespace MyModularStore.API.Controllers
 {
