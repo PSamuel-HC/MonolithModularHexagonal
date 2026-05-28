@@ -13,6 +13,7 @@ builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
     [typeof(NotFoundException)] = new NotFoundExceptionHandler(),
 });
 
+
 builder.Services.AddCustomersModule(builder.Configuration);
 
 var app = builder.Build();

@@ -1,10 +1,13 @@
 using AutoMapper;
 using FluentValidation;
+using MassTransit;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Application.Validators;
 using MyModularStore.Orders.Domain.Entities;
+using MyModularStore.Shared.Commands;
 using MyModularStore.Shared.Contracts;
+using MyModularStore.Shared.Events;
 using MyModularStore.Shared.Exceptions;
 
 namespace MyModularStore.Orders.Application.Services
@@ -14,7 +17,9 @@ namespace MyModularStore.Orders.Application.Services
         IMapper mapper,
         OrderCreateDtoValidators createValidator,
         OrderUpdateDtoValidators updateValidator,
-        ICustomerContract customerContract
+        ICustomerContract customerContract,
+        ISendEndpointProvider sendEndpointProvider,
+        IPublishEndpoint publishEnpoint
     ) : IOrderModule
     {
         public async Task<IEnumerable<OrderReadDto>> GetAllAsync()
@@ -33,12 +38,31 @@ namespace MyModularStore.Orders.Application.Services
         {
             await createValidator.ValidateAndThrowAsync(dto);
 
-            var customerExists = await customerContract.ExistsAsync(dto.CustomerId!.Value);
-            if (!customerExists)
-                throw new NotFoundException($"Customer with id {dto.CustomerId} not found.");
+            ////var customerExists = await customerContract.ExistsAsync(dto.CustomerId!.Value);
+            ////if (!customerExists)
+            ////    throw new NotFoundException($"Customer with id {dto.CustomerId} not found.");
 
             var order = mapper.Map<Order>(dto);
             await repository.AddAsync(order);
+
+            // Queue — destination resolved from EndpointConvention.Map<FulfillOrderCommand> in Program.cs
+
+            await sendEndpointProvider.Send(new FulfillOrderCommand
+            {
+                OrderId = order.Id,
+                CustomerId = order.CustomerId,
+                OrderNumber = order.OrderNumber
+            });
+
+            // Topic — fan-out to all subscribers
+            await publishEnpoint.Publish(new OrderPlacedEvent
+            {
+                OrderId = order.Id,
+                CustomerId = order.CustomerId,
+                OrderNumber = order.OrderNumber,
+                PlacedAt = DateTime.UtcNow
+            });
+
             return mapper.Map<OrderReadDto>(order);
         }
 

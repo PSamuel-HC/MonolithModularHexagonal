@@ -1,13 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyModularStore.Customers.Application.Ports;
 using MyModularStore.Customers.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MyModularStore.Customers.Infrastructure
 {
-    internal class CustomerRepository(CustomerDbContext context ) : ICustomerRepository
+    internal class CustomerRepository(CustomerDbContext context) : ICustomerRepository
     {
         public async Task<IEnumerable<Customer>> GetAllAsync()
         {

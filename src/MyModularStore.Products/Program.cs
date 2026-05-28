@@ -1,5 +1,7 @@
 ﻿using FluentValidation;
+using MassTransit;
 using MyModularStore.Products;
+using MyModularStore.Products.Consumer;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
@@ -15,6 +17,23 @@ builder.Services.AddProductsModule(builder.Configuration);
 builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
 {
     [typeof(NotFoundException)] = new NotFoundExceptionHandler(),
+});
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<InventoryUpdateConsumer>();
+
+    //if dev or prod
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
 });
 
 //builder.Services.AddApiVersioning(options =>
