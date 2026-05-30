@@ -3,6 +3,7 @@ using MassTransit;
 using MyModularStore.Orders;
 using MyModularStore.Orders.Consumers;
 using MyModularStore.Orders.Infrastructure;
+using MyModularStore.Orders.Sagas;
 using MyModularStore.Shared.Commands;
 using MyModularStore.Shared.Contracts;
 using MyModularStore.Shared.Contracts.Http;
@@ -32,6 +33,11 @@ builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
 
 builder.Services.AddMassTransit(x =>
 {
+
+    x.AddSagaStateMachine<OrderSaga, OrderSagaState>()
+        .InMemoryRepository();
+
+
     ////x.AddEntityFrameworkOutbox<OrderDBContext>(o =>
     ////{
     ////    o.UsePostgres();     // tell MassTransit we're using PostgreSQL
@@ -51,7 +57,7 @@ builder.Services.AddMassTransit(x =>
 
         cfg.ReceiveEndpoint("order-fulfillment", e =>
         {
-            e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+            e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
             e.ConfigureConsumer<FulfillOrderConsumer>(context);
             EndpointConvention.Map<FulfillOrderCommand>(e.InputAddress);
         });

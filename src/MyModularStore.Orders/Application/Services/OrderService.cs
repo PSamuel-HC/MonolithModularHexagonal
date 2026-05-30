@@ -46,13 +46,12 @@ namespace MyModularStore.Orders.Application.Services
             await repository.AddAsync(order);
 
             // Queue — destination resolved from EndpointConvention.Map<FulfillOrderCommand> in Program.cs
-
-            await sendEndpointProvider.Send(new FulfillOrderCommand
-            {
-                OrderId = order.Id,
-                CustomerId = order.CustomerId,
-                OrderNumber = order.OrderNumber
-            });
+            //await sendEndpointProvider.Send(new FulfillOrderCommand
+            //{
+            //    OrderId = order.Id,
+            //    CustomerId = order.CustomerId,
+            //    OrderNumber = order.OrderNumber
+            //});
 
             // Topic — fan-out to all subscribers
             await publishEnpoint.Publish(new OrderPlacedEvent

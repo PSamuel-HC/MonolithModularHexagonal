@@ -17,10 +17,13 @@ namespace MyModularStore.Orders.Sagas
 
         public OrderSaga()
         {
+            //Where to save Saga Event Status
             InstanceState(x => x.CurrentState);
 
+
+            //Correlation
             Event(() => OrderPlaced, e =>
-            {
+            {                      //Sagas                      //Broker
                 e.CorrelateBy(state => state.OrderIdKey, ctx => ctx.Message.OrderId.ToString());
                 e.SelectId(_ => NewId.NextGuid());
             });
@@ -37,6 +40,7 @@ namespace MyModularStore.Orders.Sagas
                     .Then(ctx =>
                     {
                         ctx.Saga.OrderId = ctx.Message.OrderId;
+                        ctx.Saga.OrderIdKey = ctx.Message.OrderId.ToString();
                         ctx.Saga.CustomerId = ctx.Message.CustomerId;
                         ctx.Saga.OrderNumber = ctx.Message.OrderNumber;
                         ctx.Saga.PlacedAt = ctx.Message.PlacedAt;
