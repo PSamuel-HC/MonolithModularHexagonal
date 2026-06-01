@@ -1,5 +1,4 @@
 ﻿using MassTransit;
-using MyModularStore.Shared.Commands;
 using MyModularStore.Shared.Events;
 
 namespace MyModularStore.Orders.Sagas
@@ -13,7 +12,11 @@ namespace MyModularStore.Orders.Sagas
 
         public Event<OrderPlacedEvent> OrderPlaced { get; private set; } = null!;
         public Event<OrderFulfilledEvent> OrderFulfilled { get; private set; } = null!;
+        public Event<EmailSentEvent> EmailSent { get; private set; } = null!;
         public Event<OrderFulfillmentFailedEvent> OrderFulfillmentFailed { get; private set; } = null!;
+        public Event ReadyToComplete { get; private set; } = null!;
+
+
 
         public OrderSaga()
         {
@@ -34,7 +37,16 @@ namespace MyModularStore.Orders.Sagas
             Event(() => OrderFulfillmentFailed, e =>
                 e.CorrelateBy(state => state.OrderIdKey, ctx => ctx.Message.OrderId.ToString()));
 
+            Event(() => EmailSent, e =>
+                e.CorrelateBy(state => state.OrderIdKey, ctx => ctx.Message.OrderId.ToString()));
 
+
+            //Composite Event Definition
+            CompositeEvent(() => ReadyToComplete,
+                state => state.ReadyToComplete,
+                OrderFulfilled, EmailSent);
+
+            //Initial
             Initially(
                 When(OrderPlaced)
                     .Then(ctx =>
@@ -47,20 +59,29 @@ namespace MyModularStore.Orders.Sagas
                         Console.WriteLine(
                             $"[Saga] Order #{ctx.Saga.OrderNumber} placed → sending fulfillment command.");
                     })
-                    .Send(ctx => new FulfillOrderCommand
+                    .PublishAsync(ctx => ctx.Init<OrderFulfillmentRequestedEvent>(new
                     {
-                        OrderId = ctx.Saga.OrderId,
-                        CustomerId = ctx.Saga.CustomerId,
-                        OrderNumber = ctx.Saga.OrderNumber
-                    })
+                        ctx.Saga.OrderId,
+                        ctx.Saga.CustomerId,
+                        ctx.Saga.OrderNumber
+                    }))
                     .TransitionTo(Fulfilling)
                 );
 
+
+            //Event in Process
             During(Fulfilling,
                 When(OrderFulfilled)
-                    .Then(ctx =>
-                        Console.WriteLine(
-                            $"[Saga] Order #{ctx.Saga.OrderNumber} fulfilled → Completed."))
+                    .Then(ctx => Console.WriteLine(
+                        $"[Saga] Composite 1/2 — fulfilled #{ctx.Saga.OrderNumber} (waiting for email)")),
+
+                When(EmailSent)
+                    .Then(ctx => Console.WriteLine(
+                        $"[Saga] Composite 1/2 — email sent #{ctx.Saga.OrderNumber} (waiting for fulfillment)")),
+
+                When(ReadyToComplete)
+                    .Then(ctx => Console.WriteLine(
+                        $"[Saga] Composite 2/2 — both done #{ctx.Saga.OrderNumber} → Completed."))
                     .TransitionTo(Completed)
                     .Finalize(),
 

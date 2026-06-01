@@ -45,7 +45,8 @@ builder.Services.AddMassTransit(x =>
     ////});
 
     x.AddConsumer<FulfillOrderConsumer>();
-    x.AddConsumer<OrderConfirmationConsumer>();
+    x.AddConsumer<SendEmailConsumer>();
+    //x.AddConsumer<OrderConfirmationConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -55,12 +56,12 @@ builder.Services.AddMassTransit(x =>
             h.Password("guest");
         });
 
-        cfg.ReceiveEndpoint("order-fulfillment", e =>
-        {
-            e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
-            e.ConfigureConsumer<FulfillOrderConsumer>(context);
-            EndpointConvention.Map<FulfillOrderCommand>(e.InputAddress);
-        });
+        //cfg.ReceiveEndpoint("order-fulfillment", e =>
+        //{
+        //    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
+        //    e.ConfigureConsumer<FulfillOrderConsumer>(context);
+        //    EndpointConvention.Map<FulfillOrderCommand>(e.InputAddress);
+        //});
 
         ////cfg.ReceiveEndpoint("confirmation", e =>
         ////{

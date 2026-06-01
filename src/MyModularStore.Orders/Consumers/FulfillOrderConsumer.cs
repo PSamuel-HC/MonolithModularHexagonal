@@ -5,36 +5,36 @@ using System.Collections.Concurrent;
 
 namespace MyModularStore.Orders.Consumers
 {
-    public class FulfillOrderConsumer : IConsumer<FulfillOrderCommand>
+    public class FulfillOrderConsumer : IConsumer<OrderFulfillmentRequestedEvent>
     {
         private static readonly ConcurrentDictionary<int, int> _attempts = new();
 
         private const int FailUntilAttempt = 3;
 
-        public async Task Consume(ConsumeContext<FulfillOrderCommand> context)
+        public async Task Consume(ConsumeContext<OrderFulfillmentRequestedEvent> context)
         {
 
-            FulfillOrderCommand command = context.Message;
+            OrderFulfillmentRequestedEvent command = context.Message;
 
-            var attempt = _attempts.AddOrUpdate(command.OrderId, 1, (_, count) => count + 1);
+            //var attempt = _attempts.AddOrUpdate(command.OrderId, 1, (_, count) => count + 1);
 
-            if (attempt < FailUntilAttempt)
-            {
-                Console.WriteLine(
-                    $"[FulfillOrderConsumer] Simulating transient failure on attempt {attempt}...");
-                throw new InvalidOperationException(
-                    $"Transient failure on attempt {attempt} — inventory system unavailable.");
-            }
+            //if (attempt < FailUntilAttempt)
+            //{
+            //    Console.WriteLine(
+            //        $"[FulfillOrderConsumer] Simulating transient failure on attempt {attempt}...");
+            //    throw new InvalidOperationException(
+            //        $"Transient failure on attempt {attempt} — inventory system unavailable.");
+            //}
 
-            _attempts.TryRemove(command.OrderId, out _);
+            //_attempts.TryRemove(command.OrderId, out _);
 
-            Console.WriteLine($"[FulfillOrderConsumer] Fulfilling order #{context.Message.OrderNumber}");
-
-
-            await Task.Delay(300);
+            //Console.WriteLine($"[FulfillOrderConsumer] Fulfilling order #{context.Message.OrderNumber}");
 
 
-            Console.WriteLine($"[FulfillOrderConsumer] Order #{context.Message.OrderNumber} fulfilled.");
+            //await Task.Delay(300);
+
+
+            //Console.WriteLine($"[FulfillOrderConsumer] Order #{context.Message.OrderNumber} fulfilled.");
 
             await context.Publish(new OrderFulfilledEvent
             {
