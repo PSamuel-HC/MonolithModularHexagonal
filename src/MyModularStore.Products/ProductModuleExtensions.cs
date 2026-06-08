@@ -28,7 +28,7 @@ namespace MyModularStore.Products
 
             services.AddScoped<ProductService>();
             services.AddScoped<IProductModule>(sp => sp.GetRequiredService<ProductService>());
-            services.AddScoped<IProductContract>(sp => sp.GetRequiredService<ProductService>());
+            //services.AddScoped<IProductContract>(sp => sp.GetRequiredService<ProductService>());
 
             return services;
         }

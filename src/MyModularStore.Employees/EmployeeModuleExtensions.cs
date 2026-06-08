@@ -28,7 +28,7 @@ namespace MyModularStore.Employees
 
             services.AddScoped<EmployeeService>();
             services.AddScoped<IEmployeeModule>(sp => sp.GetRequiredService<EmployeeService>());
-            services.AddScoped<IEmployeeContract>(sp => sp.GetRequiredService<EmployeeService>());
+            //services.AddScoped<IEmployeeContract>(sp => sp.GetRequiredService<EmployeeService>());
 
             return services;
         }

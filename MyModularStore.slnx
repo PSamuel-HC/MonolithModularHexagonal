@@ -1,10 +1,13 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/MyModularStore.API/MyModularStore.API.csproj" />
-    <Project Path="src/MyModularStore.Orders/MyModularStore.Orders.csproj" />
     <Project Path="src/MyModularStore.Customers/MyModularStore.Customers.csproj" />
-    <Project Path="src/MyModularStore.Products/MyModularStore.Products.csproj" />
     <Project Path="src/MyModularStore.Employees/MyModularStore.Employees.csproj" />
+    <Project Path="src/MyModularStore.Orders/MyModularStore.Orders.csproj" />
+    <Project Path="src/MyModularStore.Products/MyModularStore.Products.csproj" />
     <Project Path="src/MyModularStore.Shared/MyModularStore.Shared.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="MyModularStore.Orders.Tests/MyModularStore.Orders.Tests.csproj" Id="32f17ae9-029a-44cc-bc2c-072b7172d5ce" />
   </Folder>
 </Solution>

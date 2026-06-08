@@ -1,7 +1,4 @@
 ﻿using MyModularStore.Customers.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MyModularStore.Customers.Application.Ports
 {
