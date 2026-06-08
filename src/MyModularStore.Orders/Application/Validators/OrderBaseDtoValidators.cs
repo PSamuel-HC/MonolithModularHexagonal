@@ -13,6 +13,7 @@ namespace MyModularStore.Orders.Application.Validators
                 .WithMessage("Order number cannot be empty and has a maximum length of 50 characters.");
 
             RuleFor(x => x.CustomerId)
+                .NotNull()
                 .GreaterThan(0)
                 .WithMessage("A valid CustomerId is required.");
 
