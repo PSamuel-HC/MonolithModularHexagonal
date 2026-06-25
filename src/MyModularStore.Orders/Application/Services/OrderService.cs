@@ -1,6 +1,7 @@
 using AutoMapper;
 using FluentValidation;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Application.Validators;
@@ -19,7 +20,8 @@ namespace MyModularStore.Orders.Application.Services
         OrderUpdateDtoValidators updateValidator,
         ICustomerContract customerContract,
         //ISendEndpointProvider sendEndpointProvider,
-        IPublishEndpoint publishEnpoint
+        IPublishEndpoint publishEnpoint,
+        ILogger<OrderService> logger
     ) : IOrderModule
     {
         public async Task<IEnumerable<OrderReadDto>> GetAllAsync(CancellationToken ct = default)
@@ -31,6 +33,8 @@ namespace MyModularStore.Orders.Application.Services
         public async Task<OrderReadDto?> GetByIdAsync(int id, CancellationToken ct = default)
         {
             var order = await repository.GetByIdAsync(id, ct);
+            if (order is null)
+                logger.LogWarning("Order {OrderId} not found", id);
             return order is null ? null : mapper.Map<OrderReadDto>(order);
         }
 
@@ -40,18 +44,18 @@ namespace MyModularStore.Orders.Application.Services
 
             var customerExists = await customerContract.ExistsAsync(dto.CustomerId!.Value);
             if (!customerExists)
+            {
+                logger.LogWarning(
+                    "Order creation rejected — customer {CustomerId} not found", dto.CustomerId);
                 throw new NotFoundException($"Customer with id {dto.CustomerId} not found.");
+            }
 
             var order = mapper.Map<Order>(dto);
             await repository.AddAsync(order);
 
-            // Queue — destination resolved from EndpointConvention.Map<FulfillOrderCommand> in Program.cs
-            //await sendEndpointProvider.Send(new FulfillOrderCommand
-            //{
-            //    OrderId = order.Id,
-            //    CustomerId = order.CustomerId,
-            //    OrderNumber = order.OrderNumber
-            //});
+            logger.LogInformation(
+                "Order {OrderId} ({OrderNumber}) created for customer {CustomerId}",
+                order.Id, order.OrderNumber, order.CustomerId);
 
             // Topic — fan-out to all subscribers
             await publishEnpoint.Publish(new OrderPlacedEvent
@@ -62,6 +66,8 @@ namespace MyModularStore.Orders.Application.Services
                 PlacedAt = DateTime.UtcNow
             });
 
+            logger.LogInformation("OrderPlacedEvent published for order {OrderId}", order.Id);
+
             return mapper.Map<OrderReadDto>(order);
         }
 
@@ -69,17 +75,27 @@ namespace MyModularStore.Orders.Application.Services
         {
             await updateValidator.ValidateAndThrowAsync(dto);
             var order = await repository.GetByIdAsync(id);
-            if (order is null) return false;
+            if (order is null)
+            {
+                logger.LogWarning("Update requested for non-existent order {OrderId}", id);
+                return false;
+            }
             mapper.Map(dto, order);
             await repository.UpdateAsync(order, ct);
+            logger.LogInformation("Order {OrderId} updated", id);
             return true;
         }
 
         public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
         {
             var order = await repository.GetByIdAsync(id);
-            if (order is null) return false;
+            if (order is null)
+            {
+                logger.LogWarning("Delete requested for non-existent order {OrderId}", id);
+                return false;
+            }
             await repository.DeleteAsync(order, ct);
+            logger.LogInformation("Order {OrderId} deleted", id);
             return true;
         }
     }

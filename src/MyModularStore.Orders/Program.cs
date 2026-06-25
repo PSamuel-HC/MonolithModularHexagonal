@@ -3,6 +3,7 @@ using MassTransit;
 using MyModularStore.Orders;
 using MyModularStore.Orders.Consumers;
 using MyModularStore.Orders.Infrastructure;
+using MyModularStore.Orders.Infrastructure.Middleware;
 using MyModularStore.Orders.Sagas;
 using MyModularStore.Shared.Commands;
 using MyModularStore.Shared.Contracts;
@@ -10,8 +11,17 @@ using MyModularStore.Shared.Contracts.Http;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, lc) => lc
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}{Exception}"));
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
@@ -75,6 +85,8 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

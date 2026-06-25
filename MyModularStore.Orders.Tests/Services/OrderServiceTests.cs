@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FluentAssertions;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 using Moq;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
@@ -20,6 +21,7 @@ namespace MyModularStore.Orders.Tests.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<ICustomerContract> _mockCustomerContract;
         private readonly Mock<IPublishEndpoint> _mockPublishEndpoint;
+        private readonly Mock<ILogger<OrderService>> _mockLogger;
 
         //Real
         private readonly OrderCreateDtoValidators _createValidator;
@@ -34,6 +36,7 @@ namespace MyModularStore.Orders.Tests.Services
             _mockMapper = new Mock<IMapper>();
             _mockCustomerContract = new Mock<ICustomerContract>();
             _mockPublishEndpoint = new Mock<IPublishEndpoint>();
+            _mockLogger = new Mock<ILogger<OrderService>>();
             _createValidator = new OrderCreateDtoValidators();
             _updateValidator = new OrderUpdateDtoValidators();
 
@@ -43,7 +46,8 @@ namespace MyModularStore.Orders.Tests.Services
                 _createValidator,
                 _updateValidator,
                 _mockCustomerContract.Object,
-                _mockPublishEndpoint.Object);
+                _mockPublishEndpoint.Object,
+                _mockLogger.Object);
         }
 
 
