@@ -10,4 +10,5 @@
   <Folder Name="/test/">
     <Project Path="MyModularStore.Orders.Tests/MyModularStore.Orders.Tests.csproj" Id="32f17ae9-029a-44cc-bc2c-072b7172d5ce" />
   </Folder>
+  <Project Path="SqlPlayground/SqlPlayground.csproj" />
 </Solution>
