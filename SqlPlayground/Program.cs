@@ -11,6 +11,7 @@ const string Conn =
 await Demo_UpdateOrderStatus(orderId: 2, newStatus: "Shipped");
 await Demo_SoftDelete(customerId: 3);
 await Demo_HardDeleteCancelledItems();
+await CancelOrder(2);
 
 static async Task Demo_SelectCustomers()
 {
@@ -170,5 +171,42 @@ static async Task Demo_HardDeleteCancelledItems()
 
 
 
+//homework cancelorder
+static async Task CancelOrder(int orderId)
+{
+    Console.WriteLine($"\n── Cancel Order {orderId} ─────────────────────");
 
+    await using var conn = new NpgsqlConnection(Conn);
+    await conn.OpenAsync();
 
+    await using var updateCmd = new NpgsqlCommand(
+        """
+        UPDATE orders
+        SET status = 'Cancelled'
+        WHERE id = @id
+        """, conn);
+
+    updateCmd.Parameters.AddWithValue("id", orderId);
+
+    int updatedRows = await updateCmd.ExecuteNonQueryAsync();
+
+    if (updatedRows == 0)
+    {
+        Console.WriteLine($"Order {orderId} was not found.");
+        return;
+    }
+
+    Console.WriteLine($"Order {orderId} was cancelled.");
+
+    await using var deleteCmd = new NpgsqlCommand(
+        """
+        DELETE FROM order_items
+        WHERE order_id = @id
+        """, conn);
+
+    deleteCmd.Parameters.AddWithValue("id", orderId);
+
+    int deletedRows = await deleteCmd.ExecuteNonQueryAsync();
+
+    Console.WriteLine($"Deleted {deletedRows} order item(s).");
+}
