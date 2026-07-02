@@ -12,6 +12,10 @@ await Demo_UpdateOrderStatus(orderId: 2, newStatus: "Shipped");
 await Demo_SoftDelete(customerId: 3);
 await Demo_HardDeleteCancelledItems();
 
+// Homework: Cancel Order
+//await Homework_CancelOrder_InlineSql(orderId: 4);
+await Homework_CancelOrder_Procedure(orderId: 3);
+
 static async Task Demo_SelectCustomers()
 {
     Console.WriteLine("\n── All Customers ────────────────────────");
@@ -169,6 +173,68 @@ static async Task Demo_HardDeleteCancelledItems()
 }
 
 
+// Cancel Order with Inline SQL
+static async Task Homework_CancelOrder_InlineSql(int orderId)
+{
+    Console.WriteLine("\n── Cancel Order ──────────────────────────");
 
+    await using var conn = new NpgsqlConnection(Conn);
+    await conn.OpenAsync();
+
+    // Update Order Status
+    await using var updateCmd = new NpgsqlCommand(
+    """
+        UPDATE orders
+        SET    status = 'Cancelled'
+        WHERE  id = @id
+        RETURNING id, order_number, status
+        """, conn);
+    updateCmd.Parameters.AddWithValue("id", orderId);
+
+    int updatedRows = await updateCmd.ExecuteNonQueryAsync();
+    if (updatedRows > 0)
+    {
+        Console.WriteLine($"  Order {orderId} cancelled successfully.");
+    }
+    else
+    {
+        Console.WriteLine($"  Order {orderId} not found or already cancelled.");
+    }
+
+
+    // Remove all order items
+    await using var deleteCmd = new NpgsqlCommand(
+        """
+        DELETE FROM order_items
+        WHERE  order_id = @id
+        """, conn);
+    deleteCmd.Parameters.AddWithValue("id", orderId);
+
+    int deletedRows = await deleteCmd.ExecuteNonQueryAsync();
+    if (deletedRows > 0)
+    {
+        Console.WriteLine($"  {deletedRows} order item(s) removed.");
+    }
+    else
+    {
+        Console.WriteLine($"  No order items found for order {orderId}.");
+    }
+}
+
+
+// Cancel Order with PostgreSQL Procedure
+static async Task Homework_CancelOrder_Procedure(int orderId)
+{
+    Console.WriteLine("\n── Cancel Order via Procedure ────────────");
+
+    await using var conn = new NpgsqlConnection(Conn);
+    await conn.OpenAsync();
+
+    await using var procedureCmd = new NpgsqlCommand("CALL cancel_order(@order_id)", conn);
+    procedureCmd.Parameters.AddWithValue("order_id", orderId);
+
+    await procedureCmd.ExecuteNonQueryAsync();
+    Console.WriteLine($"  Order {orderId} cancellation procedure executed.");
+}
 
 
