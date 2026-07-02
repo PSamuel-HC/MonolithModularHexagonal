@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using SqlPlayground;
 
 
 const string Conn =
@@ -8,9 +9,16 @@ const string Conn =
 //await Demo_SelectCustomers();
 //await Demo_InsertAndReturn();
 //await Demo_SelectWithFilter();
-await Demo_UpdateOrderStatus(orderId: 2, newStatus: "Shipped");
-await Demo_SoftDelete(customerId: 3);
+
+
+await DbInit.InitProceduresAsync(Conn);
+
+await Demo_UpdateOrderStatus(orderId: 18, newStatus: "Shipped");
+await Demo_SoftDelete(customerId: 6);
 await Demo_HardDeleteCancelledItems();
+
+
+await Demo_CancelOrder(18);
 
 static async Task Demo_SelectCustomers()
 {
@@ -169,6 +177,19 @@ static async Task Demo_HardDeleteCancelledItems()
 }
 
 
+static async Task Demo_CancelOrder(int orderId)
+{
+    await using var conn = new NpgsqlConnection(Conn);
+    await conn.OpenAsync();
 
+    var sql = "CALL my_cancel_order_prd(@orderId)";
+
+    await using var cmd = new NpgsqlCommand(sql, conn);
+    cmd.Parameters.AddWithValue("orderId", orderId);
+
+    await cmd.ExecuteNonQueryAsync();
+
+    Console.WriteLine($"Order {orderId} cancelled successfully.");
+}
 
 
