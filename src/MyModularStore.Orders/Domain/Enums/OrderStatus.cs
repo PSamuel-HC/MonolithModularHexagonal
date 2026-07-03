@@ -8,6 +8,8 @@ namespace MyModularStore.Orders.Domain.Enums
     {
         Pending,
         Shipped,
-        Delivered
+        Delivered,
+        Processing,
+        Cancelled
     }
 }

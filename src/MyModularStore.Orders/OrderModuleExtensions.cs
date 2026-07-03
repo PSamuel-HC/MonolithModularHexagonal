@@ -5,6 +5,7 @@ using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Application.Services;
 using MyModularStore.Orders.Application.Validators;
 using MyModularStore.Orders.Infrastructure;
+using Npgsql;
 
 namespace MyModularStore.Orders
 {
@@ -14,11 +15,14 @@ namespace MyModularStore.Orders
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            var conn = configuration.GetConnectionString("DefaultConnection");
+            var conn = configuration.GetConnectionString("DefaultConnection")!;
 
-            services.AddDbContext<OrderDBContext>(options => options.UseNpgsql(conn));
+            var dataSource = NpgsqlDataSource.Create(conn);
+            services.AddSingleton(dataSource);
 
-            services.AddScoped<IOrderRepository, OrderRepository>();
+            // services.AddDbContext<OrderDBContext>(options => options.UseNpgsql(conn));
+
+            services.AddScoped<IOrderRepository, NpgsqlOrderRepository>();
 
             services.AddScoped<OrderCreateDtoValidators>();
             services.AddScoped<OrderUpdateDtoValidators>();

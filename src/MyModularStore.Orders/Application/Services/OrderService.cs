@@ -42,13 +42,13 @@ namespace MyModularStore.Orders.Application.Services
         {
             await createValidator.ValidateAndThrowAsync(dto, ct);
 
-            var customerExists = await customerContract.ExistsAsync(dto.CustomerId!.Value);
-            if (!customerExists)
-            {
-                logger.LogWarning(
-                    "Order creation rejected — customer {CustomerId} not found", dto.CustomerId);
-                throw new NotFoundException($"Customer with id {dto.CustomerId} not found.");
-            }
+            //var customerExists = await customerContract.ExistsAsync(dto.CustomerId!.Value);
+            //if (!customerExists)
+            //{
+            //    logger.LogWarning(
+            //        "Order creation rejected — customer {CustomerId} not found", dto.CustomerId);
+            //    throw new NotFoundException($"Customer with id {dto.CustomerId} not found.");
+            //}
 
             var order = mapper.Map<Order>(dto);
             await repository.AddAsync(order);

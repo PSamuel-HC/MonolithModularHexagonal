@@ -13,7 +13,12 @@ namespace MyModularStore.Orders.Application.Mapping
 
             CreateMap<OrderCreateDto, Order>()
                 .ForMember(d => d.OrderNumber,
-                    opt => opt.MapFrom(_ => "ORD-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()));
+                    opt => opt.MapFrom(_ => "ORD-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()))
+                .ForMember(d => d.CreatedAt, opt => opt.Ignore());
+
+            CreateMap<OrderUpdateDto, Order>()
+                .ForMember(d => d.OrderNumber, opt => opt.Ignore())
+                .ForMember(d => d.CreatedAt,   opt => opt.Ignore());
         }
     }
 }
