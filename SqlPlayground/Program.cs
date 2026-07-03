@@ -8,9 +8,35 @@ const string Conn =
 //await Demo_SelectCustomers();
 //await Demo_InsertAndReturn();
 //await Demo_SelectWithFilter();
-await Demo_UpdateOrderStatus(orderId: 2, newStatus: "Shipped");
-await Demo_SoftDelete(customerId: 3);
-await Demo_HardDeleteCancelledItems();
+//await Demo_UpdateOrderStatus(orderId: 2, newStatus: "Shipped");
+//await Demo_SoftDelete(customerId: 3);
+//await Demo_HardDeleteCancelledItems();
+await CancelOrderAsync(4);
+
+static async Task CancelOrderAsync(int orderId)
+{
+    Console.WriteLine("\n── Cancel oreder with Stored procedure ───");
+
+    await using var conn = new NpgsqlConnection(Conn);
+    await conn.OpenAsync();
+
+    try
+    {
+        await using var cmd = new NpgsqlCommand(
+            "CALL cancel_order(@orderId);",
+            conn);
+
+        cmd.Parameters.AddWithValue("orderId", orderId);
+
+        await cmd.ExecuteNonQueryAsync();
+
+        Console.WriteLine($"  Order {orderId} was cancelled successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"  {ex.Message}");
+    }
+}
 
 static async Task Demo_SelectCustomers()
 {
