@@ -1,3 +1,4 @@
+using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Domain.Entities;
 using MyModularStore.Orders.Domain.Enums;
@@ -104,5 +105,49 @@ namespace MyModularStore.Orders.Infrastructure
             Status      = Enum.Parse<OrderStatus>(r.GetString(r.GetOrdinal("status"))),
             CreatedAt   = r.GetDateTime(r.GetOrdinal("created_at")),
         };
+
+        public async Task<IEnumerable<OrderWithCustomerReadDto>> GetAllWithCustomerAsync(CancellationToken ct = default)
+        {
+            await using var conn = await dataSource.OpenConnectionAsync(ct);
+            await using var cmd = conn.CreateCommand();
+
+            cmd.CommandText = """
+                SELECT o.id,
+                       o.order_number,
+                       o.total_amount,
+                       o.status,
+                       o.created_at,
+                       o.customer_id,
+                       c.name  AS customer_name,
+                       c.email AS customer_email
+                FROM   public.orders o
+                LEFT  JOIN public.customers c ON c.id = o.customer_id
+                ORDER  BY o.id
+                """;
+
+            var results = new List<OrderWithCustomerReadDto>();
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+
+            while (await reader.ReadAsync(ct))
+            {
+                results.Add(new OrderWithCustomerReadDto
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                    OrderNumber = reader.GetString(reader.GetOrdinal("order_number")),
+                    TotalAmount = reader.GetDecimal(reader.GetOrdinal("total_amount")),
+                    Status = Enum.Parse<OrderStatus>(reader.GetString(reader.GetOrdinal("status"))),
+                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
+                    CustomerId = reader.GetInt32(reader.GetOrdinal("customer_id")),
+                    CustomerName = reader.IsDBNull(reader.GetOrdinal("customer_name"))
+                                        ? "Unknown"
+                                        : reader.GetString(reader.GetOrdinal("customer_name")),
+                    CustomerEmail = reader.IsDBNull(reader.GetOrdinal("customer_email"))
+                                        ? string.Empty
+                                        : reader.GetString(reader.GetOrdinal("customer_email")),
+                });
+            }
+
+            return results;
+        }
     }
 }

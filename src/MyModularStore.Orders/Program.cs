@@ -12,6 +12,8 @@ using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
 using Serilog;
+using System.Reflection;
+using DbUp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +24,23 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .Enrich.FromLogContext()
     .WriteTo.Console(
         outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}{Exception}"));
+
+
+var connectionString = builder.Configuration
+    .GetConnectionString("DefaultConnection")!;
+
+var upgrader = DeployChanges.To
+    .PostgresqlDatabase(connectionString)
+    .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
+    .LogToConsole()
+    .Build();
+
+var result = upgrader.PerformUpgrade();
+if (!result.Successful)
+{
+    Console.Error.WriteLine($"Migration failed: {result.Error}");
+    Environment.Exit(1);   // stop the app — schema is not safe to use
+}
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();

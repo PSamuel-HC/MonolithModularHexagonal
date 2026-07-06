@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Domain.Entities;
 
@@ -28,6 +29,11 @@ namespace MyModularStore.Orders.Infrastructure
         {
             context.Orders.Remove(order);
             await context.SaveChangesAsync(ct);
+        }
+
+        public Task<IEnumerable<OrderWithCustomerReadDto>> GetAllWithCustomerAsync(CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

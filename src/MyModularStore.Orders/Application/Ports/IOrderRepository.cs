@@ -1,3 +1,4 @@
+using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Domain.Entities;
 
 namespace MyModularStore.Orders.Application.Ports
@@ -9,5 +10,6 @@ namespace MyModularStore.Orders.Application.Ports
         Task AddAsync(Order order, CancellationToken ct = default);
         Task UpdateAsync(Order order, CancellationToken ct = default);
         Task DeleteAsync(Order order, CancellationToken ct = default);
+        Task<IEnumerable<OrderWithCustomerReadDto>> GetAllWithCustomerAsync(CancellationToken ct = default);
     }
 }

@@ -98,5 +98,9 @@ namespace MyModularStore.Orders.Application.Services
             logger.LogInformation("Order {OrderId} deleted", id);
             return true;
         }
+
+        public Task<IEnumerable<OrderWithCustomerReadDto>> GetAllWithCustomerAsync(
+            CancellationToken ct = default)
+            => repository.GetAllWithCustomerAsync(ct);
     }
 }

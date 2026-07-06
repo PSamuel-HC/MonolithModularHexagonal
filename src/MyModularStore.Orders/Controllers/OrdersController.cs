@@ -40,6 +40,10 @@ public class OrdersController(IOrderModule orderModule) : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
+    [HttpGet("with-customer")]
+    public async Task<ActionResult<IEnumerable<OrderWithCustomerReadDto>>> GetOrdersWithCustomer(
+        CancellationToken ct)
+        => Ok(await orderModule.GetAllWithCustomerAsync(ct));
 
     [HttpGet("slow-no-cancel")]
     public async Task<IActionResult> SlowWithoutCancellation()
