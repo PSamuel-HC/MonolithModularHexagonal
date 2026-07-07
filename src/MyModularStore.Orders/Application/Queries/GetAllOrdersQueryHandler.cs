@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;

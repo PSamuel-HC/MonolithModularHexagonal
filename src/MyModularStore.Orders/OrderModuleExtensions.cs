@@ -1,8 +1,10 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyModularStore.Orders.Application.Behaviors;
+using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Application.Services;
 using MyModularStore.Orders.Application.Validators;
@@ -29,6 +31,9 @@ namespace MyModularStore.Orders
             services.AddScoped<OrderCreateDtoValidators>();
             services.AddScoped<OrderUpdateDtoValidators>();
 
+            services.AddScoped<IValidator<OrderCreateDto>, OrderCreateDtoValidators>();
+            services.AddScoped<IValidator<OrderUpdateDto>, OrderUpdateDtoValidators>();
+
             services.AddAutoMapper(cfg => { }, typeof(OrderModuleExtensions).Assembly);
 
             services.AddScoped<OrderService>();
@@ -37,6 +42,7 @@ namespace MyModularStore.Orders
             services.AddMediatR(cfg =>
             {
                 cfg.RegisterServicesFromAssembly(typeof(OrderModuleExtensions).Assembly);
+                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
             });
 

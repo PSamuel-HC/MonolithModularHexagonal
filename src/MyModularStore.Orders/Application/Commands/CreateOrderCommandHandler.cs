@@ -1,29 +1,22 @@
-﻿using AutoMapper;
-using FluentValidation;
+using AutoMapper;
 using MassTransit;
-using MassTransit.Transports;
 using MediatR;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
-using MyModularStore.Orders.Application.Services;
-using MyModularStore.Orders.Application.Validators;
 using MyModularStore.Orders.Domain.Entities;
 using MyModularStore.Shared.Events;
-using System.ComponentModel.DataAnnotations;
 
 namespace MyModularStore.Orders.Application.Commands
 {
     public class CreateOrderCommandHandler(
         IOrderRepository repository,
         IMapper mapper,
-        OrderCreateDtoValidators validator,
-        IPublishEndpoint publishEndpoint,
-        ILogger<CreateOrderCommandHandler> logger
+        IPublishEndpoint publishEndpoint
         ) : IRequestHandler<CreateOrderCommand, OrderReadDto>
     {
         public async Task<OrderReadDto> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-            await validator.ValidateAndThrowAsync(request.dto, cancellationToken);
+            //await validator.ValidateAndThrowAsync(request.dto, cancellationToken);
 
             var order = mapper.Map<Order>(request.dto);
 
@@ -37,9 +30,9 @@ namespace MyModularStore.Orders.Application.Commands
                 PlacedAt = DateTime.UtcNow
             }, cancellationToken);
 
-            logger.LogInformation(
-                "Order {OrderId} ({OrderNumber}) created via CQRS handler",
-                order.Id, order.OrderNumber);
+            //logger.LogInformation(
+            //    "Order {OrderId} ({OrderNumber}) created via CQRS handler",
+            //    order.Id, order.OrderNumber);
 
             return mapper.Map<OrderReadDto>(order);
         }
