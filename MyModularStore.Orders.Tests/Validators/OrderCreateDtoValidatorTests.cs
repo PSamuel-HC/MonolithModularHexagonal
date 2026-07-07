@@ -45,10 +45,8 @@ namespace MyModularStore.Orders.Tests.Validators
         {
             CustomerId = customerId,
             OrderNumber = "ORD-TEST",
-            CustomerName = "Jane Doe",
             TotalAmount = 150.00m,
             Status = OrderStatus.Pending,
-            ShippingAddress = null
         };
     }
 }

@@ -1,6 +1,7 @@
-using Microsoft.EntityFrameworkCore;
+// using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using MyModularStore.Employees.Application;
 using MyModularStore.Employees.Application.Ports;
 using MyModularStore.Employees.Application.Validators;
@@ -17,9 +18,13 @@ namespace MyModularStore.Employees
         {
             var conn = configuration.GetConnectionString("DefaultConnection");
 
-            services.AddDbContext<EmployeeDbContext>(options => options.UseNpgsql(conn));
+            // services.AddDbContext<EmployeeDbContext>(options => options.UseNpgsql(conn));
 
-            services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            var dataSource = NpgsqlDataSource.Create(conn!);
+            services.AddSingleton(dataSource);
+
+            // services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            services.AddScoped<IEmployeeRepository, NpgsqlEmployeeRepository>();
 
             services.AddScoped<CreateEmployeeDtoValidator>();
             services.AddScoped<UpdateEmployeeDtoValidator>();

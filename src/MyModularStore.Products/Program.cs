@@ -1,4 +1,6 @@
-﻿using FluentValidation;
+﻿using System.Reflection;
+using DbUp;
+using FluentValidation;
 using MassTransit;
 using MyModularStore.Products;
 using MyModularStore.Products.Consumer;
@@ -7,6 +9,19 @@ using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+var upgrader = DeployChanges.To
+    .PostgresqlDatabase(connectionString)
+    .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
+    .LogToConsole()
+    .Build();
+var result = upgrader.PerformUpgrade();
+if (!result.Successful)
+{
+    Console.Error.WriteLine($"Migration failed: {result.Error}");
+    Environment.Exit(1);
+}
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();

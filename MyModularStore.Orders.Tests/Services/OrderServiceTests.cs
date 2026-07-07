@@ -59,7 +59,6 @@ namespace MyModularStore.Orders.Tests.Services
             {
                 CustomerId = 99,
                 OrderNumber = "ORD-TEST",
-                CustomerName = "Jane Doe",
                 TotalAmount = 100,
                 Status = Domain.Enums.OrderStatus.Pending
             };
@@ -97,7 +96,6 @@ namespace MyModularStore.Orders.Tests.Services
         {
             CustomerId = 1,
             OrderNumber = "ORD-TEST",
-            CustomerName = "Jane Doe",
             TotalAmount = 150.00m,
             Status = Domain.Enums.OrderStatus.Pending
         };
