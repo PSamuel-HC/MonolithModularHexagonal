@@ -40,9 +40,9 @@ namespace MyModularStore.Orders.Application.Services
 
         public async Task<OrderReadDto> CreateAsync(OrderCreateDto dto, CancellationToken ct = default)
         {
-            await createValidator.ValidateAndThrowAsync(dto, ct);
+            await createValidator.ValidateAndThrowAsync(dto, ct);  //B1
 
-            //var customerExists = await customerContract.ExistsAsync(dto.CustomerId!.Value);
+            //var customerExists = await customerContract.ExistsAsync(dto.CustomerId!.Value); //B2
             //if (!customerExists)
             //{
             //    logger.LogWarning(

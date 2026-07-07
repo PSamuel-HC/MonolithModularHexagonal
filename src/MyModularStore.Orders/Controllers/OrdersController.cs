@@ -1,16 +1,19 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MyModularStore.Orders.Application.Commands;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
+using MyModularStore.Orders.Application.Queries;
 
 namespace MyModularStore.Orders.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController(IOrderModule orderModule) : ControllerBase
+public class OrdersController(IOrderModule orderModule, ISender sender) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<OrderReadDto>>> GetOrders(CancellationToken ct)
-        => Ok(await orderModule.GetAllAsync(ct));
+        => Ok(await sender.Send(new GetAllOrdersQuery(), ct));
 
     [HttpGet("{id}")]
     public async Task<ActionResult<OrderReadDto>> GetOrder(int id, CancellationToken ct)
@@ -22,7 +25,7 @@ public class OrdersController(IOrderModule orderModule) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<OrderReadDto>> CreateOrder(OrderCreateDto dto, CancellationToken ct)
     {
-        var result = await orderModule.CreateAsync(dto, ct);
+        var result = await sender.Send(new CreateOrderCommand(dto), ct);
         return CreatedAtAction(nameof(GetOrder), new { id = result.Id }, result);
     }
 

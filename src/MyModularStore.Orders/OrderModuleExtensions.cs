@@ -1,6 +1,8 @@
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MyModularStore.Orders.Application.Behaviors;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Application.Services;
 using MyModularStore.Orders.Application.Validators;
@@ -31,6 +33,12 @@ namespace MyModularStore.Orders
 
             services.AddScoped<OrderService>();
             services.AddScoped<IOrderModule>(sp => sp.GetRequiredService<OrderService>());
+
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(typeof(OrderModuleExtensions).Assembly);
+                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+            });
 
             return services;
         }
