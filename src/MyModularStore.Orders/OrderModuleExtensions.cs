@@ -4,11 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyModularStore.Orders.Application.Behaviors;
+using MyModularStore.Orders.Application.Commands;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Application.Services;
 using MyModularStore.Orders.Application.Validators;
 using MyModularStore.Orders.Infrastructure;
+using MyModularStore.Orders.Infrastructure.Services;
 using Npgsql;
 
 namespace MyModularStore.Orders
@@ -31,8 +33,7 @@ namespace MyModularStore.Orders
             services.AddScoped<OrderCreateDtoValidators>();
             services.AddScoped<OrderUpdateDtoValidators>();
 
-            services.AddScoped<IValidator<OrderCreateDto>, OrderCreateDtoValidators>();
-            services.AddScoped<IValidator<OrderUpdateDto>, OrderUpdateDtoValidators>();
+            services.AddScoped<IValidator<CreateOrderCommand>, CreateOrderCommandValidator>();
 
             services.AddAutoMapper(cfg => { }, typeof(OrderModuleExtensions).Assembly);
 
@@ -45,6 +46,8 @@ namespace MyModularStore.Orders
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
             });
+
+            services.AddHostedService<OrderStatsService>();
 
             return services;
         }
