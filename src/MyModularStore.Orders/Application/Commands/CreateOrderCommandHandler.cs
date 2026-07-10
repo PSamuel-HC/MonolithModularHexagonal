@@ -1,6 +1,7 @@
 using AutoMapper;
 using MassTransit;
 using MediatR;
+using Microsoft.Extensions.Caching.Distributed;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Domain.Entities;
@@ -11,14 +12,12 @@ namespace MyModularStore.Orders.Application.Commands
     public class CreateOrderCommandHandler(
         IOrderRepository repository,
         IMapper mapper,
-        IPublishEndpoint publishEndpoint
-        ) : IRequestHandler<CreateOrderCommand, OrderReadDto>
+        IPublishEndpoint publishEndpoint,
+        IDistributedCache cache) : IRequestHandler<CreateOrderCommand, OrderReadDto>
     {
         public async Task<OrderReadDto> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-            //await validator.ValidateAndThrowAsync(request.dto, cancellationToken);
-
-            var order = mapper.Map<Order>(request.dto);
+            Order order = mapper.Map<Order>(request.dto);
 
             await repository.AddAsync(order, cancellationToken);
 
@@ -30,9 +29,7 @@ namespace MyModularStore.Orders.Application.Commands
                 PlacedAt = DateTime.UtcNow
             }, cancellationToken);
 
-            //logger.LogInformation(
-            //    "Order {OrderId} ({OrderNumber}) created via CQRS handler",
-            //    order.Id, order.OrderNumber);
+            await cache.RemoveAsync("orders:all", cancellationToken);
 
             return mapper.Map<OrderReadDto>(order);
         }

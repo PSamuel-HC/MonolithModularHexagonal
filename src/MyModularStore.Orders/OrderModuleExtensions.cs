@@ -10,6 +10,7 @@ using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Application.Services;
 using MyModularStore.Orders.Application.Validators;
 using MyModularStore.Orders.Infrastructure;
+using MyModularStore.Orders.Infrastructure.Health;
 using MyModularStore.Orders.Infrastructure.Services;
 using Npgsql;
 
@@ -48,6 +49,10 @@ namespace MyModularStore.Orders
             });
 
             services.AddHostedService<OrderStatsService>();
+
+            services.AddHealthChecks()
+                .AddCheck<DatabaseHealthCheck>("database")
+                .AddCheck<RedisHealthCheck>("redis", tags: new[] { "ready" });
 
             return services;
         }

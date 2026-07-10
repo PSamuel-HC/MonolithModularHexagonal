@@ -1,5 +1,9 @@
+using DbUp;
 using FluentValidation;
 using MassTransit;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using MyModularStore.Orders;
 using MyModularStore.Orders.Consumers;
 using MyModularStore.Orders.Infrastructure;
@@ -13,8 +17,7 @@ using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
 using Serilog;
 using System.Reflection;
-using DbUp;
-using Microsoft.AspNetCore.RateLimiting;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,7 +52,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddSlidingWindowLimiter("read-policy", opt =>
     {
         opt.Window = TimeSpan.FromSeconds(20);
-        opt.PermitLimit = 10;
+        opt.PermitLimit = 1;
         opt.SegmentsPerWindow = 5;
         opt.QueueLimit = 0;
     });
@@ -69,6 +72,15 @@ builder.Services.AddRateLimiter(options =>
 
     };
 
+});
+
+
+
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis")
+        ?? "localhost:6379";
 });
 
 
@@ -134,6 +146,19 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
+// Liveness — only checks that the process itself is alive (no DB/Redis)
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,   // skip all registered checks — just confirm the process responds
+    ResponseWriter = WriteJsonResponse
+}).DisableRateLimiting();
+
+// Readiness — checks DB + Redis connectivity
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    ResponseWriter = WriteJsonResponse
+}).DisableRateLimiting();
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.UseSerilogRequestLogging();
@@ -150,3 +175,21 @@ app.UseRateLimiter();
 app.MapControllers();
 
 app.Run();
+
+
+static Task WriteJsonResponse(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+    var result = JsonSerializer.Serialize(new
+    {
+        status = report.Status.ToString(),
+        checks = report.Entries.Select(e => new
+        {
+            name = e.Key,
+            status = e.Value.Status.ToString(),
+            description = e.Value.Description,
+            duration = e.Value.Duration.TotalMilliseconds + "ms"
+        })
+    });
+    return context.Response.WriteAsync(result);
+}
