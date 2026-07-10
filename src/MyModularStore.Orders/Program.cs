@@ -14,6 +14,7 @@ using MyModularStore.Shared.Exceptions;
 using Serilog;
 using System.Reflection;
 using DbUp;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +42,35 @@ if (!result.Successful)
     Console.Error.WriteLine($"Migration failed: {result.Error}");
     Environment.Exit(1);   // stop the app — schema is not safe to use
 }
+
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddSlidingWindowLimiter("read-policy", opt =>
+    {
+        opt.Window = TimeSpan.FromSeconds(20);
+        opt.PermitLimit = 10;
+        opt.SegmentsPerWindow = 5;
+        opt.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("write-policy", opt =>
+    {
+        opt.Window = TimeSpan.FromSeconds(10);
+        opt.PermitLimit = 3;
+        opt.QueueLimit = 0;
+    });
+
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync(
+            "Too many requests. Please slow down.", ct);
+
+    };
+
+});
+
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
@@ -105,13 +135,18 @@ builder.Services.AddMassTransit(x =>
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+
 app.UseSerilogRequestLogging();
+
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseHttpsRedirection();
+
+app.UseRateLimiter();
+
 app.MapControllers();
 
 app.Run();

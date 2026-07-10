@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using MyModularStore.Orders.Application.Commands;
 using MyModularStore.Orders.Application.DTOs;
 using MyModularStore.Orders.Application.Ports;
@@ -9,6 +10,7 @@ namespace MyModularStore.Orders.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("read-policy")] // all actions
 public class OrdersController(IOrderModule orderModule, ISender sender) : ControllerBase
 {
     [HttpGet]
@@ -23,6 +25,7 @@ public class OrdersController(IOrderModule orderModule, ISender sender) : Contro
     }
 
     [HttpPost]
+    [EnableRateLimiting("write-policy")] // override
     public async Task<ActionResult<OrderReadDto>> CreateOrder(OrderCreateDto dto, CancellationToken ct)
     {
         var result = await sender.Send(new CreateOrderCommand(dto), ct);
@@ -30,6 +33,7 @@ public class OrdersController(IOrderModule orderModule, ISender sender) : Contro
     }
 
     [HttpPut("{id}")]
+    [EnableRateLimiting("write-policy")] // override
     public async Task<IActionResult> UpdateOrder(int id, OrderUpdateDto dto, CancellationToken ct)
     {
         var updated = await orderModule.UpdateAsync(id, dto, ct);
@@ -37,6 +41,7 @@ public class OrdersController(IOrderModule orderModule, ISender sender) : Contro
     }
 
     [HttpDelete("{id}")]
+    [EnableRateLimiting("write-policy")] // override
     public async Task<IActionResult> DeleteOrder(int id, CancellationToken ct)
     {
         var deleted = await orderModule.DeleteAsync(id, ct);
@@ -49,22 +54,24 @@ public class OrdersController(IOrderModule orderModule, ISender sender) : Contro
         => Ok(await orderModule.GetAllWithCustomerAsync(ct));
 
     [HttpGet("slow-no-cancel")]
+    [DisableRateLimiting]
     public async Task<IActionResult> SlowWithoutCancellation()
     {
-        Console.WriteLine("[NO-CT] Step 1 — starting...");
-        await Task.Delay(2000);   // no ct — deaf to cancellation
+        ////Console.WriteLine("[NO-CT] Step 1 — starting...");
+        ////await Task.Delay(2000);   // no ct — deaf to cancellation
 
-        Console.WriteLine("[NO-CT] Step 2 — processing...");
-        await Task.Delay(2000);
+        ////Console.WriteLine("[NO-CT] Step 2 — processing...");
+        ////await Task.Delay(2000);
 
-        Console.WriteLine("[NO-CT] Step 3 — sending notifications...");
-        await Task.Delay(2000);
+        ////Console.WriteLine("[NO-CT] Step 3 — sending notifications...");
+        ////await Task.Delay(2000);
 
-        Console.WriteLine("[NO-CT] Step 4 — done! (but nobody is listening)");
+        ////Console.WriteLine("[NO-CT] Step 4 — done! (but nobody is listening)");
         return Ok("Completed");
     }
 
     [HttpGet("slow-with-cancel")]
+    [DisableRateLimiting]
     public async Task<IActionResult> SlowWithCancellation(CancellationToken ct)
     {
         try
