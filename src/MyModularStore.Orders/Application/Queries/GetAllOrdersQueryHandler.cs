@@ -10,7 +10,7 @@ namespace MyModularStore.Orders.Application.Queries
 {
     public class GetAllOrdersQueryHandler(
         IOrderRepository repository,
-        IDistributedCache cache,
+        //IDistributedCache cache,
         ILogger<GetAllOrdersQueryHandler> logger,
         IMapper mapper) : IRequestHandler<GetAllOrdersQuery, IEnumerable<OrderReadDto>>
     {
@@ -18,24 +18,24 @@ namespace MyModularStore.Orders.Application.Queries
 
         public async Task<IEnumerable<OrderReadDto>> Handle(GetAllOrdersQuery request, CancellationToken cancellationToken)
         {
-            byte[]? bytes = await cache.GetAsync(CacheKey, cancellationToken);
-            if (bytes is not null)
-            {
-                logger.LogInformation("Cache HIT — orders:all served from Redis");
-                return JsonSerializer.Deserialize<IEnumerable<OrderReadDto>>(bytes)!;
-            }
+            //byte[]? bytes = await cache.GetAsync(CacheKey, cancellationToken);
+            //if (bytes is not null)
+            //{
+            //    logger.LogInformation("Cache HIT — orders:all served from Redis");
+            //    return JsonSerializer.Deserialize<IEnumerable<OrderReadDto>>(bytes)!;
+            //}
 
-            logger.LogInformation("Cache MISS — querying database");
+            //logger.LogInformation("Cache MISS — querying database");
 
             IEnumerable<Order> orders = await repository.GetAllAsync(cancellationToken);
             IEnumerable<OrderReadDto> result = mapper.Map<IEnumerable<OrderReadDto>>(orders);
 
-            var serialized = JsonSerializer.SerializeToUtf8Bytes(result);
-            await cache.SetAsync(CacheKey, serialized,
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-                }, cancellationToken);
+            //var serialized = JsonSerializer.SerializeToUtf8Bytes(result);
+            //await cache.SetAsync(CacheKey, serialized,
+            //    new DistributedCacheEntryOptions
+            //    {
+            //        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            //    }, cancellationToken);
 
             return result;
         }

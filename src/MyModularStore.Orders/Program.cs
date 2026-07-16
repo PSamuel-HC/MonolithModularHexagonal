@@ -100,47 +100,48 @@ builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
     [typeof(ValidationException)]             = new ValidationExceptionHandler(),
 });
 
-builder.Services.AddMassTransit(x =>
+if (builder.Configuration.GetValue<bool>("Features:EnableMessaging", true))
 {
-
-    x.AddSagaStateMachine<OrderSaga, OrderSagaState>()
-        .InMemoryRepository();
-
-
-    ////x.AddEntityFrameworkOutbox<OrderDBContext>(o =>
-    ////{
-    ////    o.UsePostgres();     // tell MassTransit we're using PostgreSQL
-    ////    o.UseBusOutbox();    // use outbox for all Publish and Send calls
-    ////});
-
-    x.AddConsumer<FulfillOrderConsumer>();
-    x.AddConsumer<SendEmailConsumer>();
-    //x.AddConsumer<OrderConfirmationConsumer>();
-
-    x.UsingRabbitMq((context, cfg) =>
+    builder.Services.AddMassTransit(x =>
     {
-        cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
-        {
-            h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
-            h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
-        });
+        x.AddSagaStateMachine<OrderSaga, OrderSagaState>()
+            .InMemoryRepository();
 
-        //cfg.ReceiveEndpoint("order-fulfillment", e =>
-        //{
-        //    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
-        //    e.ConfigureConsumer<FulfillOrderConsumer>(context);
-        //    EndpointConvention.Map<FulfillOrderCommand>(e.InputAddress);
-        //});
-
-        ////cfg.ReceiveEndpoint("confirmation", e =>
+        ////x.AddEntityFrameworkOutbox<OrderDBContext>(o =>
         ////{
-        ////    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
-        ////    e.ConfigureConsumer<OrderConfirmationConsumer>(context);
+        ////    o.UsePostgres();     // tell MassTransit we're using PostgreSQL
+        ////    o.UseBusOutbox();    // use outbox for all Publish and Send calls
         ////});
 
-        cfg.ConfigureEndpoints(context);
+        x.AddConsumer<FulfillOrderConsumer>();
+        x.AddConsumer<SendEmailConsumer>();
+        //x.AddConsumer<OrderConfirmationConsumer>();
+
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
+            {
+                h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+                h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+            });
+
+            //cfg.ReceiveEndpoint("order-fulfillment", e =>
+            //{
+            //    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
+            //    e.ConfigureConsumer<FulfillOrderConsumer>(context);
+            //    EndpointConvention.Map<FulfillOrderCommand>(e.InputAddress);
+            //});
+
+            ////cfg.ReceiveEndpoint("confirmation", e =>
+            ////{
+            ////    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+            ////    e.ConfigureConsumer<OrderConfirmationConsumer>(context);
+            ////});
+
+            cfg.ConfigureEndpoints(context);
+        });
     });
-});
+}
 
 var app = builder.Build();
 

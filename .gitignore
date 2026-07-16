@@ -22,6 +22,7 @@ bld/
 *.v12.suo
 *.v14.suo
 *.v15.suo
+app.zip
 
 ## Visual Studio Code
 .vscode/

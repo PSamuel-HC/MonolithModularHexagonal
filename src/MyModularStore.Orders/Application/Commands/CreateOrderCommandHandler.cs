@@ -11,9 +11,10 @@ namespace MyModularStore.Orders.Application.Commands
 {
     public class CreateOrderCommandHandler(
         IOrderRepository repository,
-        IMapper mapper,
-        IPublishEndpoint publishEndpoint,
-        IDistributedCache cache) : IRequestHandler<CreateOrderCommand, OrderReadDto>
+        IMapper mapper
+        //IPublishEndpoint publishEndpoint,
+        //IDistributedCache cache
+        ) : IRequestHandler<CreateOrderCommand, OrderReadDto>
     {
         public async Task<OrderReadDto> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
@@ -21,15 +22,15 @@ namespace MyModularStore.Orders.Application.Commands
 
             await repository.AddAsync(order, cancellationToken);
 
-            await publishEndpoint.Publish(new OrderPlacedEvent
-            {
-                OrderId = order.Id,
-                CustomerId = order.CustomerId,
-                OrderNumber = order.OrderNumber,
-                PlacedAt = DateTime.UtcNow
-            }, cancellationToken);
+            //await publishEndpoint.Publish(new OrderPlacedEvent
+            //{
+            //    OrderId = order.Id,
+            //    CustomerId = order.CustomerId,
+            //    OrderNumber = order.OrderNumber,
+            //    PlacedAt = DateTime.UtcNow
+            //}, cancellationToken);
 
-            await cache.RemoveAsync("orders:all", cancellationToken);
+            //await cache.RemoveAsync("orders:all", cancellationToken);
 
             return mapper.Map<OrderReadDto>(order);
         }
