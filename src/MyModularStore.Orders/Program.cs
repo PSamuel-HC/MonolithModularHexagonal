@@ -1,3 +1,5 @@
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
 using DbUp;
 using FluentValidation;
 using MassTransit;
@@ -20,6 +22,13 @@ using System.Reflection;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var kvName = builder.Configuration["KeyVault:Name"];
+if (!string.IsNullOrEmpty(kvName))
+{
+    var kvUri = new Uri($"https://{kvName}.vault.azure.net/");
+    builder.Configuration.AddAzureKeyVault(kvUri, new DefaultAzureCredential());
+}
 
 builder.Host.UseSerilog((ctx, lc) => lc
     .MinimumLevel.Information()
@@ -102,45 +111,42 @@ builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
 
 if (builder.Configuration.GetValue<bool>("Features:EnableMessaging", true))
 {
+
     builder.Services.AddMassTransit(x =>
     {
         x.AddSagaStateMachine<OrderSaga, OrderSagaState>()
             .InMemoryRepository();
 
-        ////x.AddEntityFrameworkOutbox<OrderDBContext>(o =>
-        ////{
-        ////    o.UsePostgres();     // tell MassTransit we're using PostgreSQL
-        ////    o.UseBusOutbox();    // use outbox for all Publish and Send calls
-        ////});
-
         x.AddConsumer<FulfillOrderConsumer>();
         x.AddConsumer<SendEmailConsumer>();
-        //x.AddConsumer<OrderConfirmationConsumer>();
 
-        x.UsingRabbitMq((context, cfg) =>
+        var serviceBusConnStr = builder.Configuration.GetConnectionString("ServiceBus");
+
+        if (!string.IsNullOrEmpty(serviceBusConnStr))
         {
-            cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
+            // Cloud: use Azure Service Bus
+            x.UsingAzureServiceBus((context, cfg) =>
             {
-                h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
-                h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+                cfg.Host(serviceBusConnStr);
+                cfg.ConfigureEndpoints(context);
             });
+        }
+        else
+        {
+            // Local: use RabbitMQ (docker-compose)
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
+                {
+                    h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+                    h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+                });
 
-            //cfg.ReceiveEndpoint("order-fulfillment", e =>
-            //{
-            //    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
-            //    e.ConfigureConsumer<FulfillOrderConsumer>(context);
-            //    EndpointConvention.Map<FulfillOrderCommand>(e.InputAddress);
-            //});
-
-            ////cfg.ReceiveEndpoint("confirmation", e =>
-            ////{
-            ////    e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
-            ////    e.ConfigureConsumer<OrderConfirmationConsumer>(context);
-            ////});
-
-            cfg.ConfigureEndpoints(context);
-        });
+                cfg.ConfigureEndpoints(context);
+            });
+        }
     });
+
 }
 
 var app = builder.Build();
