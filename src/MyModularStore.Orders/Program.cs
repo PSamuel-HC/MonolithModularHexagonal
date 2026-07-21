@@ -6,6 +6,7 @@ using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Http.Resilience;
 using MyModularStore.Orders;
 using MyModularStore.Orders.Consumers;
 using MyModularStore.Orders.Infrastructure;
@@ -17,6 +18,8 @@ using MyModularStore.Shared.Contracts.Http;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
+using Polly;
+using Polly.Retry;
 using Serilog;
 using System.Reflection;
 using System.Text.Json;
@@ -98,7 +101,46 @@ builder.Services.AddOrdersModule(builder.Configuration);
 
 // Orders standalone always runs in microservice mode — use HTTP client for Customers contract
 builder.Services.AddHttpClient<ICustomerContract, CustomerHttpClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:Customers"]!));
+    client.BaseAddress = new Uri(builder.Configuration["Services:Customers"]!))
+    //.AddStandardResilienceHandler();
+    .AddResilienceHandler("customer-pipeline", pipeline =>
+    {
+        pipeline.AddTimeout(TimeSpan.FromSeconds(120));
+
+        pipeline.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 8,
+            Delay = TimeSpan.FromSeconds(3),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            // Only retry on server errors and network failures — never on 4xx
+            ShouldRetryAfterHeader = true
+        });
+
+        pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+        {
+            FailureRatio = 0.5,           // 50% failure rate triggers open
+            SamplingDuration = TimeSpan.FromSeconds(10),
+            MinimumThroughput = 5,        // need at least 5 calls to evaluate
+            BreakDuration = TimeSpan.FromSeconds(5)  // stay open 15s before retry
+        });
+    });
+
+builder.Services.AddResiliencePipeline("database", pipeline =>
+{
+    pipeline
+        .AddRetry(new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromMilliseconds(500),
+            BackoffType = DelayBackoffType.Exponential, //
+            UseJitter = true,
+            ShouldHandle = new PredicateBuilder()
+                .Handle<Npgsql.NpgsqlException>()   // connection/network errors
+                .Handle<TimeoutException>()          // query timeout
+        })
+        .AddTimeout(TimeSpan.FromSeconds(30));       // total pipeline timeout
+});
 
 // Exception handler dictionary
 builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>

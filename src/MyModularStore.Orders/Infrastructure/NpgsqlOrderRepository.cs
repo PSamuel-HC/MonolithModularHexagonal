@@ -3,27 +3,37 @@ using MyModularStore.Orders.Application.Ports;
 using MyModularStore.Orders.Domain.Entities;
 using MyModularStore.Orders.Domain.Enums;
 using Npgsql;
+using Polly;
+using Polly.Registry;
 
 namespace MyModularStore.Orders.Infrastructure
 {
-    public class NpgsqlOrderRepository(NpgsqlDataSource dataSource) : IOrderRepository
+    public class NpgsqlOrderRepository(
+        ResiliencePipelineProvider<string> pipelines,
+        NpgsqlDataSource dataSource) : IOrderRepository
     {
+
+        private readonly ResiliencePipeline _dbResilience = pipelines.GetPipeline("database");
+
         public async Task<IEnumerable<Order>> GetAllAsync(CancellationToken ct = default)
         {
-            await using var conn = await dataSource.OpenConnectionAsync(ct);
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = """
+            return await _dbResilience.ExecuteAsync(async token =>
+            {
+                await using var conn = await dataSource.OpenConnectionAsync(token);
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = """
                 SELECT id, order_number, customer_id, total_amount, status, created_at
                 FROM   public.orders
                 ORDER  BY id
                 """;
 
-            var orders = new List<Order>();
-            await using var reader = await cmd.ExecuteReaderAsync(ct);
-            while (await reader.ReadAsync(ct))
-                orders.Add(MapRow(reader));
+                var orders = new List<Order>();
+                await using var reader = await cmd.ExecuteReaderAsync(token);
+                while (await reader.ReadAsync(token))
+                    orders.Add(MapRow(reader));
 
-            return orders;
+                return orders;
+            }, ct);
         }
 
         public async Task<Order?> GetByIdAsync(int id, CancellationToken ct = default)
