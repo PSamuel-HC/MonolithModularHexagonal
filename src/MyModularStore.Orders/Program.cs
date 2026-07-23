@@ -1,5 +1,6 @@
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using DbUp;
 using FluentValidation;
 using MassTransit;
@@ -18,6 +19,9 @@ using MyModularStore.Shared.Contracts.Http;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Polly;
 using Polly.Retry;
 using Serilog;
@@ -101,30 +105,30 @@ builder.Services.AddOrdersModule(builder.Configuration);
 
 // Orders standalone always runs in microservice mode — use HTTP client for Customers contract
 builder.Services.AddHttpClient<ICustomerContract, CustomerHttpClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:Customers"]!))
+    client.BaseAddress = new Uri(builder.Configuration["Services:Customers"]!));
     //.AddStandardResilienceHandler();
-    .AddResilienceHandler("customer-pipeline", pipeline =>
-    {
-        pipeline.AddTimeout(TimeSpan.FromSeconds(120));
+    //.AddResilienceHandler("customer-pipeline", pipeline =>
+    //{
+    //    pipeline.AddTimeout(TimeSpan.FromSeconds(120));
 
-        pipeline.AddRetry(new HttpRetryStrategyOptions
-        {
-            MaxRetryAttempts = 8,
-            Delay = TimeSpan.FromSeconds(3),
-            BackoffType = DelayBackoffType.Exponential,
-            UseJitter = true,
-            // Only retry on server errors and network failures — never on 4xx
-            ShouldRetryAfterHeader = true
-        });
+    //    pipeline.AddRetry(new HttpRetryStrategyOptions
+    //    {
+    //        MaxRetryAttempts = 8,
+    //        Delay = TimeSpan.FromSeconds(3),
+    //        BackoffType = DelayBackoffType.Exponential,
+    //        UseJitter = true,
+    //        // Only retry on server errors and network failures — never on 4xx
+    //        ShouldRetryAfterHeader = true
+    //    });
 
-        pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
-        {
-            FailureRatio = 0.5,           // 50% failure rate triggers open
-            SamplingDuration = TimeSpan.FromSeconds(10),
-            MinimumThroughput = 5,        // need at least 5 calls to evaluate
-            BreakDuration = TimeSpan.FromSeconds(5)  // stay open 15s before retry
-        });
-    });
+    //    pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+    //    {
+    //        FailureRatio = 0.5,           // 50% failure rate triggers open
+    //        SamplingDuration = TimeSpan.FromSeconds(10),
+    //        MinimumThroughput = 5,        // need at least 5 calls to evaluate
+    //        BreakDuration = TimeSpan.FromSeconds(5)  // stay open 15s before retry
+    //    });
+    //});
 
 builder.Services.AddResiliencePipeline("database", pipeline =>
 {
@@ -141,6 +145,34 @@ builder.Services.AddResiliencePipeline("database", pipeline =>
         })
         .AddTimeout(TimeSpan.FromSeconds(30));       // total pipeline timeout
 });
+
+
+var otelBuilder = builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService("orders-api"))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddSource("Npgsql")
+            .AddSource("MassTransit");
+
+        if (builder.Environment.IsDevelopment())
+            tracing.AddConsoleExporter();
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation();
+
+        if (builder.Environment.IsDevelopment())
+            metrics.AddConsoleExporter();
+    });
+
+var aiConnStr = builder.Configuration.GetConnectionString("ApplicationInsights");
+if (!string.IsNullOrEmpty(aiConnStr))
+    otelBuilder.UseAzureMonitor(o => o.ConnectionString = aiConnStr);
 
 // Exception handler dictionary
 builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
