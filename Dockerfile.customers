@@ -1,0 +1,21 @@
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY src/MyModularStore.Shared/MyModularStore.Shared.csproj  src/MyModularStore.Shared/
+COPY src/MyModularStore.Customers/MyModularStore.Customers.csproj src/MyModularStore.Customers/
+
+RUN dotnet restore src/MyModularStore.Customers/MyModularStore.Customers.csproj
+
+COPY src/MyModularStore.Shared/   src/MyModularStore.Shared/
+COPY src/MyModularStore.Customers/ src/MyModularStore.Customers/
+
+RUN dotnet publish src/MyModularStore.Customers/MyModularStore.Customers.csproj \
+    -c Release -o /app/publish --no-restore
+
+# ── Stage 2: Runtime ──────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "MyModularStore.Customers.dll"]

@@ -21,11 +21,11 @@ namespace MyModularStore.Orders.Application.Commands
     {
         public async Task<OrderReadDto> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-            //var customerExists = await customerContract.ExistsAsync(request.dto.CustomerId!.Value);
-            //if (!customerExists)
-            //{
-            //    throw new NotFoundException($"Customer with id {request.dto.CustomerId} not found.");
-            //}
+            var customerExists = await customerContract.ExistsAsync(request.dto.CustomerId!.Value);
+            if (!customerExists)
+            {
+                throw new NotFoundException($"Customer with id {request.dto.CustomerId} not found.");
+            }
 
             Order order = mapper.Map<Order>(request.dto);
 

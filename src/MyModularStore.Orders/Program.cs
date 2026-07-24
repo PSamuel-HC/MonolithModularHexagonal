@@ -164,7 +164,8 @@ var otelBuilder = builder.Services.AddOpenTelemetry()
     {
         metrics
             .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation();
+            .AddHttpClientInstrumentation()
+            .AddMeter("orders-api");
 
         if (builder.Environment.IsDevelopment())
             metrics.AddConsoleExporter();
@@ -182,6 +183,8 @@ builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
     [typeof(RemoteServiceException)]          = new ServiceUnavailableExceptionHandler(),
     [typeof(ValidationException)]             = new ValidationExceptionHandler(),
 });
+
+builder.Services.AddSingleton<OrderMetrics>();
 
 if (builder.Configuration.GetValue<bool>("Features:EnableMessaging", true))
 {

@@ -11,7 +11,7 @@ namespace MyModularStore.Orders.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [EnableRateLimiting("read-policy")] // all actions
-public class OrdersController(IOrderModule orderModule, ISender sender) : ControllerBase
+public class OrdersController(IOrderModule orderModule, ISender sender, OrderMetrics metrics) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<OrderReadDto>>> GetOrders(CancellationToken ct)
@@ -28,7 +28,13 @@ public class OrdersController(IOrderModule orderModule, ISender sender) : Contro
     [EnableRateLimiting("write-policy")] // override
     public async Task<ActionResult<OrderReadDto>> CreateOrder(OrderCreateDto dto, CancellationToken ct)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
         var result = await sender.Send(new CreateOrderCommand(dto), ct);
+
+        sw.Stop();
+        metrics.OrderCreated();
+        metrics.RecordProcessingTime(sw.Elapsed.TotalMilliseconds);
         return CreatedAtAction(nameof(GetOrder), new { id = result.Id }, result);
     }
 
