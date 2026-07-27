@@ -1,0 +1,15 @@
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+WORKDIR /app
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY ["src/MyModularStore.ReportWorker/MyModularStore.ReportWorker.csproj", "src/MyModularStore.ReportWorker/"]
+COPY ["src/MyModularStore.Shared/MyModularStore.Shared.csproj", "src/MyModularStore.Shared/"]
+RUN dotnet restore "src/MyModularStore.ReportWorker/MyModularStore.ReportWorker.csproj"
+COPY . .
+RUN dotnet publish "src/MyModularStore.ReportWorker/MyModularStore.ReportWorker.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "MyModularStore.ReportWorker.dll"]

@@ -105,30 +105,30 @@ builder.Services.AddOrdersModule(builder.Configuration);
 
 // Orders standalone always runs in microservice mode — use HTTP client for Customers contract
 builder.Services.AddHttpClient<ICustomerContract, CustomerHttpClient>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["Services:Customers"]!));
+    client.BaseAddress = new Uri(builder.Configuration["Services:Customers"]!))
     //.AddStandardResilienceHandler();
-    //.AddResilienceHandler("customer-pipeline", pipeline =>
-    //{
-    //    pipeline.AddTimeout(TimeSpan.FromSeconds(120));
+    .AddResilienceHandler("customer-pipeline", pipeline =>
+    {
+        pipeline.AddTimeout(TimeSpan.FromSeconds(120));
 
-    //    pipeline.AddRetry(new HttpRetryStrategyOptions
-    //    {
-    //        MaxRetryAttempts = 8,
-    //        Delay = TimeSpan.FromSeconds(3),
-    //        BackoffType = DelayBackoffType.Exponential,
-    //        UseJitter = true,
-    //        // Only retry on server errors and network failures — never on 4xx
-    //        ShouldRetryAfterHeader = true
-    //    });
+        pipeline.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 8,
+            Delay = TimeSpan.FromSeconds(3),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            // Only retry on server errors and network failures — never on 4xx
+            ShouldRetryAfterHeader = true
+        });
 
-    //    pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
-    //    {
-    //        FailureRatio = 0.5,           // 50% failure rate triggers open
-    //        SamplingDuration = TimeSpan.FromSeconds(10),
-    //        MinimumThroughput = 5,        // need at least 5 calls to evaluate
-    //        BreakDuration = TimeSpan.FromSeconds(5)  // stay open 15s before retry
-    //    });
-    //});
+        pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+        {
+            FailureRatio = 0.5,           // 50% failure rate triggers open
+            SamplingDuration = TimeSpan.FromSeconds(10),
+            MinimumThroughput = 5,        // need at least 5 calls to evaluate
+            BreakDuration = TimeSpan.FromSeconds(5)  // stay open 15s before retry
+        });
+    });
 
 builder.Services.AddResiliencePipeline("database", pipeline =>
 {

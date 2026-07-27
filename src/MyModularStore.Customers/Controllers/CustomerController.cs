@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MassTransit;
+using Microsoft.AspNetCore.Mvc;
 using MyModularStore.Customers.Application.DTOs;
 using MyModularStore.Customers.Application.Ports;
+using MyModularStore.Shared.Events;
 
 namespace MyModularStore.Customers.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CustomersController(ICustomerModule custumerModule) : ControllerBase
+    public class CustomersController(ICustomerModule custumerModule, IPublishEndpoint publishEndpoint) : ControllerBase
     {
 
         // GET: api/customers
@@ -38,6 +40,14 @@ namespace MyModularStore.Customers.Controllers
         {
 
             CustomerDto resultDto = await custumerModule.CreateCustomerAsync(dto);
+
+            await publishEndpoint.Publish(new CustomerCreatedEvent
+            {
+                CustomerId = resultDto.Id,
+                FullName = resultDto.FullName,
+                Email = resultDto.Email,
+                CreatedAt = DateTime.UtcNow
+            });
 
             return CreatedAtAction(nameof(GetCustomers), new { id = resultDto.Id }, resultDto);
         }

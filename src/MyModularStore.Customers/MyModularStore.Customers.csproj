@@ -7,6 +7,8 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
     <PackageReference Include="dbup-postgresql" Version="5.*" />
+    <PackageReference Include="MassTransit.Azure.ServiceBus.Core" Version="8.1.0" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.1.0" />
     <PackageReference Include="Npgsql" Version="10.*" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
@@ -25,6 +27,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MyModularStore.Shared\MyModularStore.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="NewFolder\" />
   </ItemGroup>
 
   <PropertyGroup>

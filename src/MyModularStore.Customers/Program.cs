@@ -1,6 +1,8 @@
 ﻿using Azure.Monitor.OpenTelemetry.AspNetCore;
 using DbUp;
+using MassTransit;
 using MyModularStore.Customers;
+using MyModularStore.Customers.Consumers;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
@@ -55,6 +57,36 @@ if (!string.IsNullOrEmpty(aiConnStr))
 builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
 {
     [typeof(NotFoundException)] = new NotFoundExceptionHandler(),
+});
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<CustomerWelcomeConsumer>();
+
+    var serviceBusConnStr = builder.Configuration.GetConnectionString("ServiceBus");
+    if (!string.IsNullOrEmpty(serviceBusConnStr))
+    {
+        // Cloud: reuse the same Service Bus as orders-api
+        x.UsingAzureServiceBus((context, cfg) =>
+        {
+            cfg.Host(serviceBusConnStr);
+            cfg.ConfigureEndpoints(context);
+        });
+    }
+    else
+    {
+        // Local: RabbitMQ via docker-compose
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
+            {
+                h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+                h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+            });
+
+            cfg.ConfigureEndpoints(context);
+        });
+    }
 });
 
 
