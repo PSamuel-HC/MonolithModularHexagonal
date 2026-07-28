@@ -3,6 +3,7 @@ using DbUp;
 using MassTransit;
 using MyModularStore.Customers;
 using MyModularStore.Customers.Consumers;
+using MyModularStore.Customers.Endpoints;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
@@ -27,7 +28,9 @@ if (!result.Successful)
 }
 
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+
+
+//builder.Services.AddControllers();
 
 var otelBuilder = builder.Services.AddOpenTelemetry()
     .ConfigureResource(r => r.AddService("customers-api"))
@@ -94,10 +97,15 @@ builder.Services.AddCustomersModule(builder.Configuration);
 
 var app = builder.Build();
 
+
+
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseMiddleware<ExceptionMiddleware>();
+
+app.MapCustomerEndpoints();
+
 //app.UseHttpsRedirection();
-app.MapControllers();
+//app.MapControllers();
 app.Run();

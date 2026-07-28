@@ -1,9 +1,7 @@
-using MassTransit;
-using MyModularStore.ReportWorker;
+﻿using MassTransit;
 using MyModularStore.ReportWorker.Consumers;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
 
 builder.Services.AddMassTransit(x =>
 {
@@ -12,7 +10,6 @@ builder.Services.AddMassTransit(x =>
     var serviceBusConnStr = builder.Configuration.GetConnectionString("ServiceBus");
     if (!string.IsNullOrEmpty(serviceBusConnStr))
     {
-        // Cloud: reuse the same Service Bus as orders-api
         x.UsingAzureServiceBus((context, cfg) =>
         {
             cfg.Host(serviceBusConnStr);
@@ -21,7 +18,6 @@ builder.Services.AddMassTransit(x =>
     }
     else
     {
-        // Local: RabbitMQ via docker-compose
         x.UsingRabbitMq((context, cfg) =>
         {
             cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
@@ -29,7 +25,6 @@ builder.Services.AddMassTransit(x =>
                 h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
                 h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
             });
-
             cfg.ConfigureEndpoints(context);
         });
     }
