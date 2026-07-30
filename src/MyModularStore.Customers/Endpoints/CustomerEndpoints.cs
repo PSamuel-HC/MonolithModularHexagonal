@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 using MyModularStore.Customers.Application.DTOs;
 using MyModularStore.Customers.Application.Ports;
+using MyModularStore.Customers.Features.GetCustomerById;
 
 namespace MyModularStore.Customers.Endpoints
 {
@@ -25,9 +27,9 @@ namespace MyModularStore.Customers.Endpoints
         }
 
         static async Task<Results<Ok<CustomerDto>, NotFound>> GetCustomer(
-        int id, ICustomerModule module)
+        int id, ISender sender)
         {
-            var customer = await module.GetOneCustomerAsync(id);
+            var customer = await sender.Send(new GetCustomerByIdQuery(id));
             return customer is null
                 ? TypedResults.NotFound()
                 : TypedResults.Ok(customer);

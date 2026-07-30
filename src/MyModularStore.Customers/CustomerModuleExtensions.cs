@@ -1,12 +1,13 @@
 ﻿// using Microsoft.EntityFrameworkCore;
+using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using MyModularStore.Customers.Application;
 using MyModularStore.Customers.Application.Ports;
 using MyModularStore.Customers.Application.Validators;
 using MyModularStore.Customers.Infrastructure;
 using MyModularStore.Shared.Contracts;
+using Npgsql;
 
 namespace MyModularStore.Customers
 {
@@ -30,6 +31,11 @@ namespace MyModularStore.Customers
             services.AddScoped<CustomerUpdateDtoValidator>();
 
             services.AddAutoMapper(cfg => { }, typeof(CustomerModuleExtensions).Assembly);
+
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(typeof(CustomerModuleExtensions).Assembly);
+            });
 
             services.AddScoped<CustomerService>();
             services.AddScoped<ICustomerModule>(sp => sp.GetRequiredService<CustomerService>());
