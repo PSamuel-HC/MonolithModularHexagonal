@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using MyModularStore.Customers.Application.DTOs;
 using MyModularStore.Customers.Application.Ports;
 using MyModularStore.Customers.Features.GetCustomerById;
+using MyModularStore.Customers.Operations;
 
 namespace MyModularStore.Customers.Endpoints
 {
@@ -19,7 +20,28 @@ namespace MyModularStore.Customers.Endpoints
             group.MapPut("/{id}", UpdateCustomer);
             group.MapDelete("/{id}", DeleteCustomer);
             group.MapGet("/{id}/exists", CustomerExists);
+            group.MapPost("/{id}/generate-report", StartGenerateReport);
         }
+
+        static Accepted<object> StartGenerateReport(
+            int id,
+            GenerateReportRequest body,
+            OperationQueue queue,
+            OperationStore store)
+        {
+            OperationRecord op = store.Start();
+            queue.Enqueue(new OperationWorkItem(op.Id, id, body.WebhookUrl));
+
+            return TypedResults.Accepted(
+                $"/api/operations/{op.Id}",
+                (object)new { 
+                    operationId = op.Id,
+                    pollUrl = $"/api/operations/{op.Id}" 
+                });
+        }
+
+        //payloal
+        public record GenerateReportRequest(string? WebhookUrl);
 
         static async Task<Ok<IEnumerable<CustomerDto>>> GetCustomers(ICustomerModule custumerModule)
         {

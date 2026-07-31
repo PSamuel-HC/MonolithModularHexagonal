@@ -4,6 +4,7 @@ using MassTransit;
 using MyModularStore.Customers;
 using MyModularStore.Customers.Consumers;
 using MyModularStore.Customers.Endpoints;
+using MyModularStore.Customers.Operations;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
 using MyModularStore.Shared.Exceptions;
@@ -95,6 +96,11 @@ builder.Services.AddMassTransit(x =>
 
 builder.Services.AddCustomersModule(builder.Configuration);
 
+builder.Services.AddSingleton<OperationStore>(); //could be replaced with a Redis implementation
+builder.Services.AddSingleton<OperationQueue>(); //could be replace with a masstransit implementation
+builder.Services.AddHostedService<OperationWorker>();
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
 
@@ -105,6 +111,7 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.MapCustomerEndpoints();
+app.MapOperationEndpoints();
 
 //app.UseHttpsRedirection();
 //app.MapControllers();
