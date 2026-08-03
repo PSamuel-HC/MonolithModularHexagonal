@@ -4,6 +4,7 @@ using MassTransit;
 using MyModularStore.Customers;
 using MyModularStore.Customers.Consumers;
 using MyModularStore.Customers.Endpoints;
+using MyModularStore.Customers.GrpcServices;
 using MyModularStore.Customers.Operations;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
@@ -30,6 +31,9 @@ if (!result.Successful)
 
 builder.Services.AddOpenApi();
 
+
+builder.Services.AddGrpc();
+builder.Services.AddGrpcReflection();
 
 //builder.Services.AddControllers();
 
@@ -112,6 +116,10 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.MapCustomerEndpoints();
 app.MapOperationEndpoints();
+
+app.MapGrpcService<CustomerGrpcService>();
+if (app.Environment.IsDevelopment())
+    app.MapGrpcReflectionService();
 
 //app.UseHttpsRedirection();
 //app.MapControllers();
