@@ -29,7 +29,7 @@ builder.Services.AddControllers()
 builder.Services.AddProductsModule(builder.Configuration);
 builder.Services.AddOrdersModule(builder.Configuration);
 builder.Services.AddEmployeesModule(builder.Configuration);
-builder.Services.AddCustomersModule(builder.Configuration);
+builder.Services.AddCustomersModule();
 
 var deploymentMode = builder.Configuration["Deployment:Mode"];
 

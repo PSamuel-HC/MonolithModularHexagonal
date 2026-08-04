@@ -16,19 +16,6 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-var upgrader = DeployChanges.To
-    .PostgresqlDatabase(connectionString)
-    .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
-    .LogToConsole()
-    .Build();
-var result = upgrader.PerformUpgrade();
-if (!result.Successful)
-{
-    Console.Error.WriteLine($"Migration failed: {result.Error}");
-    Environment.Exit(1);
-}
-
 builder.Services.AddOpenApi();
 
 
@@ -67,47 +54,61 @@ builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
     [typeof(NotFoundException)] = new NotFoundExceptionHandler(),
 });
 
-builder.Services.AddMassTransit(x =>
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    x.AddConsumer<CustomerWelcomeConsumer>();
+    builder.Services.AddMassTransit(x =>
+    {
+        x.AddConsumer<CustomerWelcomeConsumer>();
 
-    var serviceBusConnStr = builder.Configuration.GetConnectionString("ServiceBus");
-    if (!string.IsNullOrEmpty(serviceBusConnStr))
-    {
-        // Cloud: reuse the same Service Bus as orders-api
-        x.UsingAzureServiceBus((context, cfg) =>
+        var serviceBusConnStr = builder.Configuration.GetConnectionString("ServiceBus");
+        if (!string.IsNullOrEmpty(serviceBusConnStr))
         {
-            cfg.Host(serviceBusConnStr);
-            cfg.ConfigureEndpoints(context);
-        });
-    }
-    else
-    {
-        // Local: RabbitMQ via docker-compose
-        x.UsingRabbitMq((context, cfg) =>
-        {
-            cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
+            // Cloud: reuse the same Service Bus as orders-api
+            x.UsingAzureServiceBus((context, cfg) =>
             {
-                h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
-                h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+                cfg.Host(serviceBusConnStr);
+                cfg.ConfigureEndpoints(context);
             });
+        }
+        else
+        {
+            // Local: RabbitMQ via docker-compose
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", "/", h =>
+                {
+                    h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+                    h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+                });
 
-            cfg.ConfigureEndpoints(context);
-        });
-    }
-});
+                cfg.ConfigureEndpoints(context);
+            });
+        }
+    });
+}
 
-
-builder.Services.AddCustomersModule(builder.Configuration);
+builder.Services.AddCustomersModule();
 
 builder.Services.AddSingleton<OperationStore>(); //could be replaced with a Redis implementation
 builder.Services.AddSingleton<OperationQueue>(); //could be replace with a masstransit implementation
 builder.Services.AddHostedService<OperationWorker>();
 builder.Services.AddHttpClient();
 
+
 var app = builder.Build();
 
-
+var connectionString = app.Configuration.GetConnectionString("DefaultConnection")!;
+var upgrader = DeployChanges.To
+    .PostgresqlDatabase(connectionString)
+    .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
+    .LogToConsole()
+    .Build();
+var result = upgrader.PerformUpgrade();
+if (!result.Successful)
+{
+    Console.Error.WriteLine($"Migration failed: {result.Error}");
+    Environment.Exit(1);
+}
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
@@ -124,3 +125,5 @@ if (app.Environment.IsDevelopment())
 //app.UseHttpsRedirection();
 //app.MapControllers();
 app.Run();
+
+public partial class Program { }

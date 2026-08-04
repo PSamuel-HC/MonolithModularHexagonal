@@ -14,15 +14,16 @@ namespace MyModularStore.Customers
     public static class CustomerModuleExtensions
     {
         public static IServiceCollection AddCustomersModule(
-        this IServiceCollection services,
-        IConfiguration configuration)
+        this IServiceCollection services)
         {
-            var conn = configuration.GetConnectionString("DefaultConnection");
+            services.AddSingleton(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                var conn = config.GetConnectionString("DefaultConnection");
+                return NpgsqlDataSource.Create(conn!);
+            });
 
             // services.AddDbContext<CustomerDbContext>(options => options.UseNpgsql(conn));
-
-            var dataSource = NpgsqlDataSource.Create(conn!);
-            services.AddSingleton(dataSource);
 
             // services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped<ICustomerRepository, NpgsqlCustomerRepository>();
