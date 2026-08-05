@@ -1,43 +1,51 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using MassTransit;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.DependencyInjection;
+using MyModularStore.Customers.Consumers;
 using Testcontainers.PostgreSql;
 
-namespace MyModularStore.Customers.Tests
+namespace MyModularStore.Customers.Tests;
+
+public class CustomersApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    public class CustomersApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16-alpine")
+        .WithEnvironment("POSTGRES_INITDB_ARGS", "--nosync")
+        .Build();
+
+    public async Task InitializeAsync()
     {
-        private readonly PostgreSqlContainer _postgre = new PostgreSqlBuilder("postgres:16-alpine")
-            .WithEnvironment("POSTGRES_INITDB_ARGS", "--nosync")
-            .Build();
+        await _postgres.StartAsync();
 
+        var harness = Services.GetRequiredService<ITestHarness>();
+        await harness.Start();
+    }
 
-        public async Task InitializeAsync()
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
+
+        builder.ConfigureAppConfiguration((_, config) =>
         {
-            await _postgre.StartAsync();
-        }
-
-
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.UseEnvironment("Testing");
-
-            builder.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:DefaultConnection"] = _postgre.GetConnectionString()
-                });
+                ["ConnectionStrings:DefaultConnection"] = _postgres.GetConnectionString()
             });
-        }
+        });
 
-
-        async Task IAsyncLifetime.DisposeAsync()
+        builder.ConfigureServices(services =>
         {
-            await _postgre.DisposeAsync();
-        }
+            services.AddMassTransitTestHarness(x =>
+            {
+                x.AddConsumer<CustomerWelcomeConsumer>();
+            });
+        });
+    }
+
+    public new async Task DisposeAsync()
+    {
+        await Services.GetRequiredService<ITestHarness>().Stop();
+        await _postgres.DisposeAsync();
     }
 }

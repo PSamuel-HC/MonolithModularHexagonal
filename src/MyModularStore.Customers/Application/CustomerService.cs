@@ -1,19 +1,22 @@
 ﻿using AutoMapper;
 using FluentValidation;
+using MassTransit;
 using MyModularStore.Customers.Application.DTOs;
 using MyModularStore.Customers.Application.Ports;
 using MyModularStore.Customers.Application.Validators;
 using MyModularStore.Customers.Domain;
 using MyModularStore.Shared.Contracts;
+using MyModularStore.Shared.Events;
 using MyModularStore.Shared.Exceptions;
 
 namespace MyModularStore.Customers.Application
 {
-    public  class CustomerService(
+    public class CustomerService(
        ICustomerRepository repository,
        IMapper mapper,
        CustomerCreateDtoValidator createValidator,
-       CustomerUpdateDtoValidator updateValidator) : ICustomerModule,  ICustomerContract
+       CustomerUpdateDtoValidator updateValidator,
+       IPublishEndpoint publishEndpoint) : ICustomerModule, ICustomerContract
     {
         public async Task<IEnumerable<CustomerDto>> GetCustomersAsync()
         {
@@ -26,6 +29,15 @@ namespace MyModularStore.Customers.Application
             await createValidator.ValidateAndThrowAsync(dto);
             Customer customer = mapper.Map<Customer>(dto);
             await repository.CreateAsync(customer);
+
+            await publishEndpoint.Publish(new CustomerCreatedEvent()
+            {
+                CustomerId = customer.Id,
+                Email = customer.Email,
+                CreatedAt = DateTime.UtcNow,
+                FullName = customer.FullName,
+            });
+
             return mapper.Map<CustomerDto>(customer);
         }
 
