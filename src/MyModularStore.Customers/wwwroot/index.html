@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Live Feed</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f8fafc;
+        }
+
+        #status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        #status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #64748b;
+            transition: background 0.3s;
+        }
+
+        #status-dot.connected {
+            background: #22c55e;
+        }
+
+        #status-dot.error {
+            background: #ef4444;
+        }
+
+        #feed-container {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        #feed-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #334155;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+
+        #feed {
+            list-style: none;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        #feed li {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid #1e293b;
+            animation: slideIn 0.3s ease;
+            background: #243044;
+        }
+
+        #feed li:nth-child(even) {
+            background: #1e293b;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .customer-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .customer-name {
+            font-weight: 500;
+            color: #f1f5f9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .customer-email {
+            font-size: 0.8125rem;
+            color: #94a3b8;
+            margin-top: 0.125rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .timestamp {
+            font-size: 0.75rem;
+            color: #64748b;
+            flex-shrink: 0;
+        }
+
+        #empty-state {
+            padding: 3rem 1.25rem;
+            text-align: center;
+            color: #475569;
+            font-size: 0.9375rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Customer Live Feed</h1>
+        <div id="status">
+            <span id="status-dot"></span>
+            <span id="status-text">Connecting...</span>
+        </div>
+    </header>
+
+    <div id="feed-container">
+        <div id="feed-header">New customers — live</div>
+        <ul id="feed">
+            <li id="empty-state">Waiting for the first customer registration...</li>
+        </ul>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script>
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const feed = document.getElementById('feed');
+        let firstEvent = true;
+
+        function setStatus(state, text) {
+            statusDot.className = state;
+            statusText.textContent = text;
+        }
+
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function getInitials(fullName) {
+            return fullName
+                .split(' ')
+                .map(part => part[0] || '')
+                .join('')
+                .toUpperCase()
+                .slice(0, 2);
+        }
+
+        function addCustomerToFeed(customer) {
+            if (firstEvent) {
+                feed.innerHTML = '';
+                firstEvent = false;
+            }
+
+            const li = document.createElement('li');
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = getInitials(customer.fullName);
+
+            const info = document.createElement('div');
+            info.className = 'customer-info';
+
+            const name = document.createElement('div');
+            name.className = 'customer-name';
+            name.textContent = customer.fullName;
+
+            const email = document.createElement('div');
+            email.className = 'customer-email';
+            email.textContent = customer.email;
+
+            const time = document.createElement('div');
+            time.className = 'timestamp';
+            time.textContent = formatTime(customer.timestamp);
+
+            info.appendChild(name);
+            info.appendChild(email);
+            li.appendChild(avatar);
+            li.appendChild(info);
+            li.appendChild(time);
+
+            feed.insertBefore(li, feed.firstChild);
+        }
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl('/hubs/notifications')
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on('CustomerCreated', (customer) => {
+            addCustomerToFeed(customer);
+        });
+
+        connection.onreconnecting(() => {
+            setStatus('', 'Reconnecting...');
+        });
+
+        connection.onreconnected(() => {
+            setStatus('connected', 'Connected — waiting for events');
+        });
+
+        connection.onclose(() => {
+            setStatus('error', 'Disconnected — refresh to reconnect');
+        });
+
+        connection.start()
+            .then(() => {
+                setStatus('connected', 'Connected — waiting for events');
+            })
+            .catch((err) => {
+                setStatus('error', 'Connection failed: ' + err.toString());
+                console.error('SignalR connection error:', err);
+            });
+    </script>
+</body>
+</html>

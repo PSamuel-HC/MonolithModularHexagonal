@@ -41,6 +41,7 @@ namespace MyModularStore.Products
             {
                 services.AddSingleton(new CosmosClient(cosmosConnStr));
                 services.AddScoped<CosmosProductReviewRepository>();
+                services.AddScoped<SubscriptionPolicyRepository>();
             }
 
             return services;

@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using FluentValidation;
 using MassTransit;
+using Microsoft.AspNetCore.SignalR;
 using MyModularStore.Customers.Application.DTOs;
 using MyModularStore.Customers.Application.Ports;
 using MyModularStore.Customers.Application.Validators;
 using MyModularStore.Customers.Domain;
+using MyModularStore.Customers.Hubs;
 using MyModularStore.Shared.Contracts;
 using MyModularStore.Shared.Events;
 using MyModularStore.Shared.Exceptions;
@@ -16,7 +18,8 @@ namespace MyModularStore.Customers.Application
        IMapper mapper,
        CustomerCreateDtoValidator createValidator,
        CustomerUpdateDtoValidator updateValidator,
-       IPublishEndpoint publishEndpoint) : ICustomerModule, ICustomerContract
+       IPublishEndpoint publishEndpoint,
+       IHubContext<NotificationHub> hubContext) : ICustomerModule, ICustomerContract
     {
         public async Task<IEnumerable<CustomerDto>> GetCustomersAsync()
         {
@@ -36,6 +39,16 @@ namespace MyModularStore.Customers.Application
                 Email = customer.Email,
                 CreatedAt = DateTime.UtcNow,
                 FullName = customer.FullName,
+            });
+
+            //await hubContext.Clients.User("123").SendAsync();
+
+            await hubContext.Clients.All.SendAsync("CustomerCreated", new
+            {
+                id = customer.Id,
+                fullName = customer.FullName,
+                email = customer.Email,
+                timestamp = DateTime.UtcNow
             });
 
             return mapper.Map<CustomerDto>(customer);

@@ -5,6 +5,7 @@ using MyModularStore.Customers;
 using MyModularStore.Customers.Consumers;
 using MyModularStore.Customers.Endpoints;
 using MyModularStore.Customers.GrpcServices;
+using MyModularStore.Customers.Hubs;
 using MyModularStore.Customers.Operations;
 using MyModularStore.Shared.ErrorHandling;
 using MyModularStore.Shared.ErrorHandling.Handlers;
@@ -88,6 +89,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 }
 
 builder.Services.AddCustomersModule();
+builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<OperationStore>(); //could be replaced with a Redis implementation
 builder.Services.AddSingleton<OperationQueue>(); //could be replace with a masstransit implementation
@@ -113,10 +115,14 @@ if (!result.Successful)
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
+app.UseStaticFiles();
+
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.MapCustomerEndpoints();
 app.MapOperationEndpoints();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.MapGrpcService<CustomerGrpcService>();
 if (app.Environment.IsDevelopment())

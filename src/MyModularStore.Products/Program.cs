@@ -34,22 +34,22 @@ builder.Services.AddSingleton(new Dictionary<Type, IErrorHandler>
     [typeof(NotFoundException)] = new NotFoundExceptionHandler(),
 });
 
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumer<InventoryUpdateConsumer>();
+//builder.Services.AddMassTransit(x =>
+//{
+//    x.AddConsumer<InventoryUpdateConsumer>();
 
-    //if dev or prod
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        cfg.Host("localhost", "/", h =>
-        {
-            h.Username("guest");
-            h.Password("guest");
-        });
+//    //if dev or prod
+//    x.UsingRabbitMq((context, cfg) =>
+//    {
+//        cfg.Host("localhost", "/", h =>
+//        {
+//            h.Username("guest");
+//            h.Password("guest");
+//        });
 
-        cfg.ConfigureEndpoints(context);
-    });
-});
+//        cfg.ConfigureEndpoints(context);
+//    });
+//});
 
 //builder.Services.AddApiVersioning(options =>
 //{
@@ -63,7 +63,7 @@ app.UseMiddleware<ExceptionMiddleware>();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
